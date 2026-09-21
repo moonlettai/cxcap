@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+/target/
+.DS_Store
+# Local-only scratch (review docs, one-off reports, private notes).
+# Never committed, never exported, never pushed: keeps PII and
+# work-in-progress out of git history by construction.
+local-dev/
