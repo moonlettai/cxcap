@@ -163,6 +163,59 @@ fn update_success_replaces_and_verifies() {
     assert_eq!(version_of(&ctx.root.join("install").join("cxcap")), "9.9.9");
 }
 
+/// One-shot staged binary: answers `--version` with `version` exactly once
+/// (smoke passes), then fails every later invocation, forcing the
+/// post-replace verification to restore the backup.
+fn fake_oneshot_release(server_dir: &Path, version: &str, flag: &Path) {
+    let stage = server_dir.join(format!("stage-{version}-oneshot"));
+    std::fs::create_dir_all(&stage).unwrap();
+    let script = format!(
+        "#!/bin/sh\nFLAG=\"{}\"\nif [ \"$1\" = \"--version\" ]; then if [ -f \"$FLAG\" ]; then exit 1; else touch \"$FLAG\"; echo {version}; fi; else echo fake-cxcap; fi\n",
+        flag.display()
+    );
+    std::fs::write(stage.join("cxcap"), &script).unwrap();
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(stage.join("cxcap"), std::fs::Permissions::from_mode(0o755)).unwrap();
+    }
+    let tb = format!("cxcap-{version}-{}.tar.gz", target_triple());
+    let tar_status = Command::new("tar")
+        .args(["-czf", &tb, "cxcap"])
+        .current_dir(&stage)
+        .status()
+        .expect("tar");
+    assert!(tar_status.success());
+    let tarball_path = server_dir.join(&tb);
+    let _ = std::fs::remove_file(&tarball_path);
+    std::fs::rename(stage.join(&tb), &tarball_path).unwrap();
+    let digest = format!("sha256:{}", sha256(&tarball_path));
+    let manifest_text = format!(
+        "{{\"schema\": 1, \"releases\": [{{\"version\": \"{version}\", \"assets\": [{{\"name\": \"{tb}\", \"url\": \"{tb}\", \"digest\": \"{digest}\"}}]}}]}}",
+    );
+    std::fs::write(server_dir.join("manifest.json"), manifest_text).unwrap();
+}
+
+#[test]
+fn update_rollback_restores_working_binary() {
+    // Normal harness first (dirs, server, installed copy), then swap the
+    // served release for the one-shot variant. The loopback server serves
+    // fresh reads, so no restart is needed; --check downloads no asset, so
+    // the one-shot is still armed when `update` runs.
+    let ctx = setup(18938, "9.9.9", false, false);
+    let flag = ctx.root.join("oneshot-seen");
+    fake_oneshot_release(&ctx.root.join("server"), "9.9.9", &flag);
+    let before = version_of(&ctx.root.join("install").join("cxcap"));
+    let out = installed(&ctx).arg("update").output().unwrap();
+    assert!(!out.status.success());
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("previous binary restored"),
+        "{:?}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert_eq!(version_of(&ctx.root.join("install").join("cxcap")), before);
+}
+
 #[test]
 fn update_checksum_mismatch_preserves_working_binary() {
     let ctx = setup(18933, "9.9.9", false, true);
