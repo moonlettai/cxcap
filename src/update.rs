@@ -17,11 +17,14 @@ pub const MANIFEST_ENV: &str = "CXCAP_UPDATE_MANIFEST";
 /// Set to `1`/`yes`/`true` to disable the daily release check.
 pub const NO_CHECK_ENV: &str = "CXCAP_NO_UPDATE_CHECK";
 
-/// Release-time constant: the owner points this at the public
-/// `manifest.json` before 1.0.0 (e.g. a `manifest.json` release asset).
-/// `None` until then: the daily check silently skips and `cxcap update`
-/// reports that no update source is configured.
-pub const DEFAULT_MANIFEST_URL: Option<&str> = None;
+/// Production update source: `manifest.json` attached to every GitHub
+/// release. `releases/latest/download` always serves the newest release's
+/// manifest; per-release asset URLs inside the manifest are absolute
+/// versioned download URLs, so older entries stay valid after newer
+/// releases. Override with the `CXCAP_UPDATE_MANIFEST` env var.
+pub const DEFAULT_MANIFEST_URL: Option<&str> = Some(
+    "https://github.com/moonlettai/cxcap/releases/latest/download/manifest.json",
+);
 
 /// Notice join budget: the analysis never waits longer than this for a due
 /// daily check (once per day at most); cached notices cost no network.

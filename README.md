@@ -53,7 +53,7 @@ cycles) plus static-analysis uncertainty — evidence, never an estimate.
 
 ## Evidence
 
-Measured with CXCAP v0.12.0, full `audit --json`, production files only.
+Measured with CXCAP v1.0.0, full `audit --json`, production files only.
 Pinned revisions, Apple M1 Pro (8 cores), single runs; `elapsed` includes
 parallel analysis on all cores.
 
@@ -84,11 +84,15 @@ files from real historical changes were used separately to validate
 
 ## Installation
 
-Recommended (binary + agent skill + editor link, non-interactive):
+Recommended (prebuilt binary + agent skill + editor link, non-interactive):
 
 ```sh
-curl -fsSL <release-url>/install.sh -o install.sh
-sh install.sh
+VER=1.0.0
+OS=$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/apple-darwin/;s/linux/unknown-linux-gnu/')
+ARCH=$(uname -m | sed 's/arm64/aarch64/')
+curl -fsSL "https://github.com/moonlettai/cxcap/releases/download/v${VER}/cxcap-${VER}-${ARCH}-${OS}.tar.gz" -o cxcap.tar.gz
+tar xzf cxcap.tar.gz
+sh install.sh --binary=./cxcap
 cxcap --version
 ```
 
@@ -98,7 +102,7 @@ links it into `~/.claude/skills`. Re-running is safe and idempotent.
 Binary only:
 
 ```sh
-sh install.sh --no-skill
+sh install.sh --binary=./cxcap --no-skill
 ```
 
 Or build from source (requires Rust stable):
