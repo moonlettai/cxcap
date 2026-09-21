@@ -1,63 +1,87 @@
 ---
 name: cxcap-development
 description: >
-  Proactively use CXCAP when investigating unfamiliar code, planning or
-  scoping nontrivial software changes, designing features or
-  architecture, refactoring, adding dependencies or public APIs,
-  changing cross-module behavior, reviewing an implementation plan, or
-  validating a meaningful change before completion. Exposes likely
-  touchpoints, coupling, cycles, transitive exposure, context burden,
-  and static-analysis uncertainty so unnecessary complexity is
-  avoided rather than scores being optimized.
+  Use CXCAP proactively before planning, scoping, refactoring, reviewing, or
+  completing nontrivial code changes—especially in unfamiliar code, API or
+  dependency work, architecture changes, cross-module edits, or when a small
+  change is spreading. CXCAP identifies likely touchpoints, hotspots, runtime
+  coupling, cycles, transitive exposure, context surface, and static-analysis
+  uncertainty. Use it to constrain scope and verification, never to optimize a
+  score.
 ---
 
 # CXCAP development
 
-CXCAP is a local, read-only CLI: it reports complexity and change
-exposure before implementation. It never modifies code and uploads
-nothing, so run it freely without sandboxing or confirmation.
+Use CXCAP as a **pre-change map** and **post-change regression check**. It is
+read-only toward the analyzed repository and uploads no source code.
 
-Why: a small change can tangle with coupling, cycles, contracts, and
-context you cannot see by reading files. The audit makes that visible
-so the plan stays narrow.
+## 1. Choose the smallest useful audit
 
-## Decide what to run
+- **Need a repository map** → `cxcap audit .`
+- **Know the task, not the files** → `cxcap audit . --intent "<task>"`
+- **Know the file or area** → `cxcap audit . --focus <path>`
+- **Change already implemented** → rerun `--focus` on the touched area; use a
+  whole-repo audit when architecture, dependencies, or module boundaries moved.
 
-Pick exactly one branch:
+Use plain output first. Add `--json` when you need machine parsing, a large
+report, or a before/after comparison.
 
-- Orienting, no task yet → run the whole-repo audit:
-  `cxcap audit .`
-  Stop when you can name the verdict, top hotspots, and cycles.
-- Target unknown → run intent discovery:
-  `cxcap audit . --intent "<task>"`
-  Stop when you can name the likely touchpoints.
-- Target known → run focus assessment:
-  `cxcap audit . --focus <path>`
-  Stop when you can name the dependents, transitive reach, and cycles.
-- Change implemented → rerun the audit on touched areas and compare
-  against the pre-change report.
+If CXCAP prints an update notice, update it unless the environment forbids
+network access.
 
-Commands above show the plain form. Add `[--json]` to any of them for
-the full report: agent consumption, large surfaces, before/after
-comparison.
+## 2. Read evidence before acting
 
-If an update notice appears, update CXCAP unless environment policy
-forbids it.
+Prioritize named files and relationships over the overall verdict.
 
-## Act on the evidence
+- **Hotspot / dense function** → keep the diff narrow and verify that behavior.
+- **High fan-in / transitive reach** → preserve the interface and check callers.
+- **Cycle through the target** → treat the cycle as one coordination surface.
+- **Cross-component exposure** → expect boundary coordination; avoid widening
+  the change casually.
+- **Verification/generated surface** → do not let fixture volume drive the
+  production plan.
+- **Static uncertainty** → supplement CXCAP with project search, tests, runtime
+  knowledge, or framework-specific checks.
 
-- Plan the smallest change satisfying the requirement.
-- Constrain the plan with the reported touchpoints, exposure, and
-  uncertainty.
-- Add abstraction, compatibility, dependencies, or indirection only
-  with demonstrated need.
-- Never weaken behavior to improve a CXCAP score.
+`--intent` is ranked discovery, not ground truth. If its candidates are weak,
+continue normal investigation; once you find the target, use `--focus`.
 
-## Finish
+`--focus` reports static exposure, not every runtime consumer. Reflection,
+registries, dependency injection, plugins, dynamic imports, and external users
+can be invisible.
 
-Ship only when all hold:
+## 3. Plan for the minimum necessary complexity
 
-- The project's own validation (tests, lints, build) passes.
-- A CXCAP rerun on touched areas shows no unexplained new hotspots,
-  cycles, or exposure growth.
-- Remaining complexity is justified by functionality.
+- Make the smallest change that satisfies the requirement.
+- Reuse existing boundaries before introducing new abstractions.
+- Add compatibility layers, dependencies, files, or indirection only when the
+  requirement or observed structure justifies them.
+- Preserve necessary complexity; remove only complexity that is genuinely
+  unnecessary.
+- Never weaken behavior, tests, analysis, or maintainability to improve a
+  CXCAP score.
+
+A HIGH or SEVERE verdict is not a quality failure. It means the measured area
+needs stronger scope control and verification.
+
+## 4. Verify before completion
+
+1. Run the project's normal tests, build, lint, or type checks.
+2. Rerun the smallest relevant CXCAP audit.
+3. Compare with the pre-change evidence when available.
+4. Investigate any unexplained new hotspot, cycle, coupling increase, or
+   exposure growth.
+5. Finish when remaining complexity is justified by functionality and the
+   project's own validation is green.
+
+## Gotchas
+
+- CXCAP does not estimate implementation time or effort.
+- Type-only references do not count as runtime ripple exposure.
+- Unsupported implementation languages are disclosed; dominant unscored code
+  can produce `N/A` rather than a misleading LOW verdict.
+- Audits work offline. A short daily release check may use the network; disable
+  it with `CXCAP_NO_UPDATE_CHECK=1` when required.
+- If `cxcap` is unavailable on PATH, do not block the coding task: report that
+  CXCAP could not be run and continue with the project's normal investigation
+  and validation tools.

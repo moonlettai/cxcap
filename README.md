@@ -1,91 +1,64 @@
 # CXCAP
 
+[![Crates.io](https://img.shields.io/crates/v/cxcap.svg)](https://crates.io/crates/cxcap)
+[![GitHub release](https://img.shields.io/github/v/release/moonlettai/cxcap)](https://github.com/moonlettai/cxcap/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **See complexity before it compounds.**
 
-A seemingly small change can interact with coupling, import cycles, public
-contracts, dependencies, and a large context surface — and the cost only
-shows up after the code is written. CXCAP exposes that evidence *before*
-implementation, so the plan can stay narrow.
+CXCAP is a fast, local, read-only CLI for one question that is easy to ask too late:
 
-## Benefit
+> **What complexity am I about to interact with if I make this change?**
 
-Point CXCAP at a repository and it reports, from the code as it exists now:
+It analyzes code structure, runtime-static dependencies, coupling, cycles, hotspots, transitive exposure, duplication, and context surface so you can scope a change before adding more complexity to the system.
 
-- likely touchpoints for a planned change (`--intent`, `--focus`);
-- what else the change could affect (direct and transitive exposure);
-- hotspots, import cycles, structural duplication, and planning constraints;
-- uncertainty it cannot see (dynamic behavior, external consumers).
+CXCAP does **not** decide what to build, grade code quality, or predict engineering effort. It gives humans and coding agents concrete evidence to plan against.
 
-It does not decide what to build and does not estimate effort. It gives
-humans and coding agents measured facts to plan against.
+## Why use CXCAP?
 
-## When to use it
+A change can look local while depending on much more than the file you opened:
 
-- Investigating an unfamiliar subsystem.
-- Planning or scoping a feature, refactor, or API change.
-- A "small" change that keeps spreading.
-- AI-agent planning, change-plan review, or pre-completion review.
-- A post-change check that complexity did not grow disproportionately.
+- the function is already dense;
+- the module is imported by dozens of callers;
+- the change crosses a package boundary;
+- a cycle means several modules effectively move together;
+- tests or generated code dominate the repository and hide the production surface;
+- dynamic loading means the static graph is incomplete;
+- the task description does not tell you where the implementation lives.
 
-## What it returns
+Reading files one by one is good at understanding code you already found. CXCAP is for finding **what else you need to know before editing it**.
 
-`cxcap audit` prints a verdict (LOW / MODERATE / HIGH / SEVERE, or N/A when
-the repository is dominated by unscored languages), ranked hotspots,
-folder concentration, warnings that always name the file and the observed
-fact, import cycles (small eager cycles HIGH, large or lazy tangles WATCH),
-clone pairs to fix in all places, and constraints for the next decision.
+## What should I run?
 
-Verdicts are change/complexity constraint signals, not software-quality grades:
-a mature, well-engineered repository may legitimately read HIGH or SEVERE.
+| Situation | Command | What it answers |
+|---|---|---|
+| You want a map of the repository | `cxcap audit .` | Where complexity, hotspots, cycles, and concentration live |
+| You know the task, but not the files | `cxcap audit . --intent "<task>"` | Which files are likely touchpoints and what context surrounds them |
+| You know the file or area you may change | `cxcap audit . --focus <path>` | Who depends on it, how far the change can reach, and what risky structure it intersects |
+| You finished a meaningful change | rerun `--focus` or `audit` | Whether the change introduced unexplained new complexity, cycles, or exposure |
+| Another tool or agent needs the full report | add `--json` | Stable machine-readable output |
 
-`--focus <path>` assesses a proposed change area: its complexity, direct
-external dependents, transitive reach, hotspots inside it, and cycles
-passing through it. Areas that are purely tests, examples, generated code,
-or type declarations say so instead of alarming.
+A typical workflow is:
 
-`--intent "<change description>"` starts from words instead of a path: it
-ranks likely implementation files from path and symbol vocabulary, expands
-one hop along the dependency graph, and reports the reasoning surface
-(production and verification files, components, cross-boundary edges,
-cycles) plus static-analysis uncertainty — evidence, never an estimate.
+```sh
+# 1. Find the likely implementation surface.
+cxcap audit . --intent "add session expiry"
 
-`--json` emits the same report machine-readable for agents.
+# 2. Once the target is known, inspect its structural exposure.
+cxcap audit . --focus src/auth
 
-## Evidence
+# 3. Make the smallest change that satisfies the requirement.
+#    Run the project's normal tests/build/lints.
 
-Measured with CXCAP v1.0.0, full `audit --json`, production files only.
-Pinned revisions, Apple M1 Pro (8 cores), single runs; `elapsed` includes
-parallel analysis on all cores.
+# 4. Re-check the changed area.
+cxcap audit . --focus src/auth
+```
 
-| project | rev | verdict | prod files | prod cx | avg | cycles | warnings (HIGH) | elapsed |
-|---|---|---|---|---|---|---|---|---|
-| requests | `dae7ef6` | SEVERE | 21 | 919 | 43.8 | 1 eager | 28 (9) | 0.3s |
-| django | `446d9cf` | SEVERE | 935 | 28,696 | 30.7 | 24 | 828 (230) | 6.9s |
-| pytest | `6a0de9b` | SEVERE | 94 | 6,520 | 69.4 | 2 | 171 (70) | 1.0s |
-| pip | `2b28a81` | SEVERE | 166 | 5,229 | 31.5 | 3 | 209 (60) | 0.8s |
-| slate | `279f35f` | SEVERE | 194 | 3,574 | 18.4 | 4 | 115 (43) | 0.6s |
-| vue | `4ab865a` | SEVERE | 293 | 11,872 | 40.5 | 7 | 357 (133) | 1.1s |
-| typescript | `f29aeb9` | SEVERE | 77 | 7,064 | 91.7 | 2 | 106 (36) | 19.7s |
-| cal.com | `54343aa` | SEVERE | 4,331 | 53,885 | 12.4 | 8 | 1,491 (562) | 11.2s |
-| nushell | `9fc5f8d` | SEVERE | 1,528 | 52,979 | 34.7 | 12 | 1,106 (354) | 5.2s |
-| DefinitelyTyped | `ca965dd` | HIGH | 58 | 1,606 | 27.7 | 6 | 29 (7) | 19.3s |
+You do not need an index, config file, daemon, model, or cloud account.
 
-Spot-checked findings: requests' 7-module eager cycle is real mutual
-initialization; django's ORM core cycle survived a resolver fix that
-removed phantom edges; TypeScript's only real eager cycle is 3 modules
-(a 76-member cycle lives entirely in test-fixture copies and reads WATCH).
-DefinitelyTyped's small eager cycles sit in test-example directories and
-correctly read WATCH instead of HIGH.
+## Install
 
-Honest limitations of these numbers: verdicts summarize the scored
-languages only (Python, JavaScript/TypeScript, Rust); see below. Changed
-files from real historical changes were used separately to validate
-`--intent` retrieval (31 changes, 7 repositories: Recall@10 0.70, MRR 0.47).
-
-## Installation
-
-Recommended (one command: detects your platform, fetches the latest
-release, verifies checksums, installs binary, skill, and PATH):
+### Recommended: prebuilt binary + agent skill
 
 ```sh
 curl -fsSL https://github.com/moonlettai/cxcap/releases/latest/download/install.sh -o install.sh
@@ -93,88 +66,216 @@ sh install.sh
 cxcap --version
 ```
 
-This installs `cxcap` to `~/.local/bin` (override with `--prefix=DIR`),
-the `cxcap-development` skill to `~/.agents/skills/cxcap-development`, and
-links it into `~/.claude/skills`. If `~/.local/bin` is missing from PATH,
-the installer appends it to your shell rc file (skip with `--no-path`;
-restart the shell afterwards or export PATH as printed). Re-running is
-safe and idempotent. Pinned, partial, and manual installs:
+The installer detects your supported platform, downloads the release, verifies its checksum, installs `cxcap` to `~/.local/bin`, and installs the `cxcap-development` Agent Skill.
+
+Useful options:
 
 ```sh
-CXCAP_VERSION=1.0.1 sh install.sh --prefix=DIR   # pin a version
-sh install.sh --no-skill                         # binary only
-# manual: download cxcap-<version>-<arch>-<os>.tar.gz from the release
-# page, extract it, then run: sh install.sh --binary=./cxcap
+sh install.sh --no-skill          # binary only
+sh install.sh --prefix=DIR        # custom install prefix
+CXCAP_VERSION=1.0.2 sh install.sh # install a specific version
 ```
 
-Or build from source (requires Rust stable):
+If the installer adds `~/.local/bin` to your shell configuration, open a new shell afterwards (or export the PATH it prints).
+
+### Cargo
+
+If you already have Rust and only want the binary:
 
 ```sh
+cargo install cxcap
+```
+
+### From a source checkout
+
+```sh
+git clone https://github.com/moonlettai/cxcap.git
+cd cxcap
 cargo install --path .
 ```
 
-Prebuilt binaries target macOS (Apple Silicon, Intel) and Linux
-(x86-64, ARM64) with published checksums. The Intel macOS archive is
-built from the same source but was not executed before release (no
-compatible execution environment was available); please verify
-`cxcap --version` and an audit on your machine and open an issue if
-anything fails. Windows is not a supported 1.0 target.
+CXCAP supports macOS and Linux. Windows is not a supported 1.x target. See [Platform notes](#platform-notes) for the current release coverage.
 
-## Usage
+## How to read the report
 
-```sh
-cxcap audit .                          # whole repository
-cxcap audit ../project                 # other locations (absolute or relative)
-cxcap audit . --focus src/auth         # a proposed change area
-cxcap audit . --intent "add session expiry"   # from a change description
-cxcap audit . --json                   # machine-readable report for agents
-cxcap audit . --jobs 1                 # serial mode (output is identical)
-cxcap update                           # checksum-verified upgrade
-cxcap update --check                   # report availability without installing
+Start with the **named evidence**, not the score.
+
+### Verdict
+
+`LOW`, `MODERATE`, `HIGH`, or `SEVERE` summarizes how strongly the repository's measured complexity should constrain the next change. `N/A` means the repository is dominated by implementation languages CXCAP does not score.
+
+A verdict is **not a software-quality grade**. A mature, well-engineered system can legitimately be HIGH or SEVERE because it contains dense core logic, large compatibility surfaces, or heavily depended-on modules.
+
+### Hotspots
+
+Hotspots combine local size/complexity with structural exposure. They answer:
+
+> Where would a careless change be expensive to reason about?
+
+### Warnings
+
+Warnings name the file and the observed fact: dense functions, large files, deep nesting, heavy coupling, parse uncertainty, and related signals.
+
+### Cycles
+
+Import cycles identify modules that cannot be reasoned about as fully independent units. Small eager runtime cycles are treated more strongly than large or lazy tangles. Verification-only cycles are reported without turning them into production alarms.
+
+### `--focus`
+
+Use `--focus` when you already know the area you may edit. It reports direct dependents, transitive reach, hotspot overlap, cycles through the area, and whether the target is production or a verification/generated surface.
+
+### `--intent`
+
+Use `--intent` when you know the change but not the location. CXCAP ranks likely implementation files from path and symbol vocabulary, then expands the best candidates through the dependency graph to expose surrounding context.
+
+Treat the result as a **ranked starting point**, not ground truth. Static retrieval can miss domain vocabulary, dynamic registration, reflection, or behavior encoded outside supported source languages.
+
+### `--json`
+
+Plain output is optimized for quick human/agent reading. Add `--json` for automation, large reports, or before/after comparisons.
+
+## Turn evidence into a plan
+
+| Evidence | Planning implication |
+|---|---|
+| High fan-in or large transitive reach | Preserve interfaces; verify callers and downstream behavior |
+| Cycle through the target | Treat the cycle as one coordination surface instead of editing a member in isolation |
+| Dense function / hotspot | Narrow the diff and test the exact behavior before refactoring around it |
+| Cross-component edges | Expect coordination across boundaries; avoid casually widening the change |
+| Verification/generated surface | Do not let fixture/generated volume masquerade as production risk |
+| Static-analysis uncertainty | Supplement CXCAP with project tests, search, runtime knowledge, or framework-specific checks |
+
+The goal is not to make the CXCAP score smaller. The goal is to avoid **unnecessary** complexity while preserving complexity that the software genuinely needs.
+
+## Gotchas
+
+These are the important ones:
+
+- **HIGH/SEVERE does not mean “bad repository.”** It means changes deserve stronger constraints and verification.
+- **CXCAP does not estimate effort or time.** It measures present structure and exposure.
+- **`--intent` is discovery, not semantic omniscience.** It is intentionally lightweight and local; inspect its uncertainty and use normal code search when needed.
+- **Static dependency graphs are incomplete by construction.** Runtime imports, reflection, registries, dependency injection, plugin systems, and external consumers can be invisible.
+- **Runtime coupling excludes type-only references.** Type annotations/imports do not create runtime ripple claims.
+- **Tests, examples, generated files, and type declarations are treated separately.** Large verification surfaces should not convict production code.
+- **Unsupported implementation languages are never silently scored as simple.** If they dominate, the verdict becomes `N/A`.
+- **Parse failures are visible.** CXCAP falls back safely instead of pretending the file was fully understood.
+- **CXCAP is read-only toward the analyzed repository.** It creates no repository index, cache, sidecar, or lockfile.
+- **Audits work offline, but update checks may use the network.** At most once per day CXCAP may perform a short non-blocking release check. Disable it with `CXCAP_NO_UPDATE_CHECK=1`.
+
+## Agent use
+
+The recommended installer also installs the `cxcap-development` Agent Skill at:
+
+```text
+~/.agents/skills/cxcap-development/SKILL.md
 ```
 
-## Agent skill and updating
+and links it into:
 
-The installer places a `cxcap-development` skill for coding agents
-(`~/.agents/skills/cxcap-development`, symlinked into
-`~/.claude/skills`). It triggers on unfamiliar code, nontrivial plans,
-features, architecture, refactors, dependencies, public APIs,
-cross-module changes, plan review, and pre-completion checks.
+```text
+~/.claude/skills/cxcap-development
+```
 
-CXCAP analysis itself works fully offline. At most once per day, an audit
-may perform a short non-blocking release-version check (silent when
-offline or failing); disable it with `CXCAP_NO_UPDATE_CHECK=1`.
-`cxcap update` downloads a checksum-verified, smoke-tested release and
-replaces the binary atomically where possible; a failed update keeps the
-working binary. Updates refresh the skill only for installations that
-opted into it.
+The skill teaches compatible coding agents to use CXCAP during investigation, planning, refactoring, API/dependency work, cross-module changes, and pre-completion review—without optimizing for the score.
 
-## Supported languages and platforms
+Use `--no-skill` if you only want the binary.
 
-- Python (including analyzable notebooks), JavaScript / TypeScript
-  (including embedded scripts in `.astro`, `.vue`, `.svelte`), Rust —
-  all AST-based.
-- Other languages are listed as unscored, never silently ignored. A
-  project dominated by unscored code receives N/A instead of a
-  misleading LOW.
-- macOS and Linux (Intel macOS: build-only verification, see above).
-  Windows is not a supported 1.0 target.
+## How CXCAP works
 
-## Limitations and privacy
+At a high level CXCAP:
 
-- Static analysis only: runtime imports, reflection, registries, and
-  plugin loading are invisible by construction and reported as
-  uncertainty.
-- External consumers of public contracts cannot be counted from a local
-  checkout; internal fan-in may understate compatibility exposure.
-- Parse failures fall back to line counts and are flagged, never fatal.
-- Nothing here predicts engineering effort.
-- Privacy: analyzed repositories are read-only (files are only opened
-  for reading; nothing is written to the target). No persistent
-  repository index or database is created. Source code is never
-  uploaded; the only network use is the daily release check and
-  explicit updates (see above).
+1. walks the repository read-only and analyzes files in parallel;
+2. parses supported languages with tree-sitter;
+3. measures per-file/per-function complexity;
+4. resolves internal Python, JavaScript/TypeScript, and Rust module relationships;
+5. computes coupling, cycles, transitive exposure, hotspots, and structural duplication;
+6. separates production from tests, examples, generated files, ambient declarations, and similar verification surfaces;
+7. reports deterministic evidence and planning constraints.
+
+There is no LLM, remote inference, persistent vector database, or background repository index.
+
+## Supported languages
+
+AST-based scoring is currently provided for:
+
+- Python, including analyzable notebooks;
+- JavaScript / TypeScript, including scripts in `.astro`, `.vue`, and `.svelte` files;
+- Rust.
+
+Other languages are listed as unscored instead of silently ignored. If unscored implementation code overwhelmingly dominates the repository, CXCAP reports `N/A` rather than a misleading LOW verdict.
+
+## Validation and performance
+
+CXCAP has been stress-tested against mature public repositories, synthetic adversarial cases, historical changes, parser edge cases, monorepos, generated-heavy repositories, test-heavy repositories, and large codebases.
+
+Historical `--intent` validation used 31 completed changes across 7 repositories. On that fixed benchmark, CXCAP achieved Recall@10 **0.70** and MRR **0.47** with a bounded context surface rather than returning the entire repository.
+
+<details>
+<summary>Representative repository measurements</summary>
+
+Measured with CXCAP v1.0.0 on an Apple M1 Pro (8 cores), production files only. These are evidence snapshots, not quality rankings.
+
+| project | rev | verdict | prod files | avg cx/file | cycles | elapsed |
+|---|---|---:|---:|---:|---:|---:|
+| requests | `dae7ef6` | SEVERE | 21 | 43.8 | 1 | 0.3s |
+| django | `446d9cf` | SEVERE | 935 | 30.7 | 24 | 6.9s |
+| pytest | `6a0de9b` | SEVERE | 94 | 69.4 | 2 | 1.0s |
+| pip | `2b28a81` | SEVERE | 166 | 31.5 | 3 | 0.8s |
+| slate | `279f35f` | SEVERE | 194 | 18.4 | 4 | 0.6s |
+| vue | `4ab865a` | SEVERE | 293 | 40.5 | 7 | 1.1s |
+| TypeScript | `f29aeb9` | SEVERE | 77 | 91.7 | 2 | 19.7s |
+| cal.com | `54343aa` | SEVERE | 4,331 | 12.4 | 8 | 11.2s |
+| nushell | `9fc5f8d` | SEVERE | 1,528 | 34.7 | 12 | 5.2s |
+| DefinitelyTyped | `ca965dd` | HIGH | 58 | 27.7 | 6 | 19.3s |
+
+Spot checks include verified real import cycles, generated/test-surface neutralization, monorepo workspace resolution, deterministic output across worker counts, and large-repository scaling.
+
+</details>
+
+## Updating
+
+Check without installing:
+
+```sh
+cxcap update --check
+```
+
+Update:
+
+```sh
+cxcap update
+```
+
+Updates are checksum-verified and smoke-tested before replacement. A failed update keeps the working binary. Managed Agent Skill installs are refreshed with the binary.
+
+## Platform notes
+
+Prebuilt releases target:
+
+- macOS Apple Silicon;
+- macOS Intel;
+- Linux x86-64;
+- Linux ARM64.
+
+The Intel macOS archive is built from the same source, but the 1.0 release was not executed on Intel hardware before publication. If you use that target, verify `cxcap --version` and a small audit and report any issue.
+
+## Privacy
+
+CXCAP analyzes source locally.
+
+- Analyzed repositories are opened for reading only.
+- Source code is never uploaded.
+- No persistent repository database or index is created.
+- No LLM or model download is required.
+- The only network activity is the optional daily release check and explicit updates.
+
+## Help and issues
+
+- CLI help: `cxcap --help` and `cxcap audit --help`
+- Issues: https://github.com/moonlettai/cxcap/issues
+- Releases: https://github.com/moonlettai/cxcap/releases
+- Crate: https://crates.io/crates/cxcap
 
 ## License
 
-MIT. See `LICENSE`.
+MIT. See [LICENSE](LICENSE).
