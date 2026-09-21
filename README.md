@@ -112,8 +112,11 @@ cargo install --path .
 ```
 
 Prebuilt binaries target macOS (Apple Silicon, Intel) and Linux
-(x86-64, ARM64) with published checksums. Windows is not a supported
-1.0 target.
+(x86-64, ARM64) with published checksums. The Intel macOS archive is
+built from the same source but was not executed before release (no
+compatible execution environment was available); please verify
+`cxcap --version` and an audit on your machine and open an issue if
+anything fails. Windows is not a supported 1.0 target.
 
 ## Usage
 
@@ -152,7 +155,8 @@ opted into it.
 - Other languages are listed as unscored, never silently ignored. A
   project dominated by unscored code receives N/A instead of a
   misleading LOW.
-- macOS and Linux. Windows is not a supported 1.0 target.
+- macOS and Linux (Intel macOS: build-only verification, see above).
+  Windows is not a supported 1.0 target.
 
 ## Limitations and privacy
 
