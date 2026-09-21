@@ -84,25 +84,27 @@ files from real historical changes were used separately to validate
 
 ## Installation
 
-Recommended (prebuilt binary + agent skill + editor link, non-interactive):
+Recommended (one command: detects your platform, fetches the latest
+release, verifies checksums, installs binary, skill, and PATH):
 
 ```sh
-VER=1.0.0
-OS=$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/apple-darwin/;s/linux/unknown-linux-gnu/')
-ARCH=$(uname -m | sed 's/arm64/aarch64/')
-curl -fsSL "https://github.com/moonlettai/cxcap/releases/download/v${VER}/cxcap-${VER}-${ARCH}-${OS}.tar.gz" -o cxcap.tar.gz
-tar xzf cxcap.tar.gz
-sh install.sh --binary=./cxcap
+curl -fsSL https://github.com/moonlettai/cxcap/releases/latest/download/install.sh -o install.sh
+sh install.sh
 cxcap --version
 ```
 
 This installs `cxcap` to `~/.local/bin` (override with `--prefix=DIR`),
 the `cxcap-development` skill to `~/.agents/skills/cxcap-development`, and
-links it into `~/.claude/skills`. Re-running is safe and idempotent.
-Binary only:
+links it into `~/.claude/skills`. If `~/.local/bin` is missing from PATH,
+the installer appends it to your shell rc file (skip with `--no-path`;
+restart the shell afterwards or export PATH as printed). Re-running is
+safe and idempotent. Pinned, partial, and manual installs:
 
 ```sh
-sh install.sh --binary=./cxcap --no-skill
+CXCAP_VERSION=1.0.1 sh install.sh --prefix=DIR   # pin a version
+sh install.sh --no-skill                         # binary only
+# manual: download cxcap-<version>-<arch>-<os>.tar.gz from the release
+# page, extract it, then run: sh install.sh --binary=./cxcap
 ```
 
 Or build from source (requires Rust stable):

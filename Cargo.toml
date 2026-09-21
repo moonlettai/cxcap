@@ -1,6 +1,6 @@
 [package]
 name = "cxcap"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Local software complexity analysis for understanding change exposure before complexity compounds"
 license = "MIT"
