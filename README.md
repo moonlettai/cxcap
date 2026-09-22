@@ -294,7 +294,7 @@ On a public Django checkout, the intent `add session expiry to authenticated req
 
 ## Read the reasoning
 
-For the broader argument and a reproducible proof, see [AI Coding Agents Have a Complexity Feedback Problem](docs/ai-coding-complexity-feedback.md). It explains why passing tests and structural feedback answer different questions, and invites adversarial testing rather than positive reviews.
+For the broader argument and a reproducible proof, see [AI Coding Agents Have a Complexity Feedback Problem](docs/ai-coding-complexity-feedback.md). It explains why passing tests and structural feedback answer different questions, and invites adversarial testing rather than positive reviews. See the [AI coding agent workflow](docs/agent-workflow.md) for a concrete before/after loop.
 
 ## Help and issues
 
