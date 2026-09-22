@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">CXCAP change receipt for Django session expiry</title>
+  <desc id="desc">A real CXCAP analysis of public Django for the intent add session expiry to authenticated requests.</desc>
+  <rect width="1600" height="900" fill="#0b1020"/>
+  <rect x="70" y="65" width="1460" height="770" rx="28" fill="#111a30" stroke="#263557" stroke-width="2"/>
+  <text x="120" y="145" fill="#8ea4d8" font-family="Inter,Arial,sans-serif" font-size="24" letter-spacing="4">CXCAP CHANGE RECEIPT</text>
+  <text x="120" y="205" fill="#f4f7ff" font-family="Inter,Arial,sans-serif" font-size="42" font-weight="700">add session expiry to authenticated requests</text>
+  <text x="120" y="250" fill="#91a2c6" font-family="Inter,Arial,sans-serif" font-size="22">public Django checkout · derived demonstration · structural evidence, not a quality grade</text>
+  <rect x="120" y="305" width="300" height="190" rx="18" fill="#231c35" stroke="#9c6cff" stroke-width="2"/>
+  <text x="150" y="350" fill="#bda4ff" font-family="Inter,Arial,sans-serif" font-size="20">VERDICT</text>
+  <text x="150" y="430" fill="#f0eaff" font-family="Inter,Arial,sans-serif" font-size="58" font-weight="800">SEVERE</text>
+  <text x="150" y="466" fill="#c7b8ef" font-family="Inter,Arial,sans-serif" font-size="18">230 HIGH warnings</text>
+  <g font-family="Inter,Arial,sans-serif">
+    <text x="500" y="345" fill="#91a2c6" font-size="20">REASONING SURFACE</text>
+    <text x="500" y="405" fill="#f4f7ff" font-size="48" font-weight="700">22 + 3</text>
+    <text x="500" y="442" fill="#91a2c6" font-size="19">production + verification files</text>
+    <text x="500" y="525" fill="#91a2c6" font-size="20">CROSS-BOUNDARY EDGES</text>
+    <text x="500" y="585" fill="#f4f7ff" font-size="48" font-weight="700">14</text>
+    <text x="500" y="622" fill="#91a2c6" font-size="19">before implementation</text>
+    <text x="850" y="345" fill="#91a2c6" font-size="20">CYCLES IN SURFACE</text>
+    <text x="850" y="405" fill="#f4f7ff" font-size="48" font-weight="700">4</text>
+    <text x="850" y="442" fill="#91a2c6" font-size="19">structural relationships</text>
+    <text x="850" y="525" fill="#91a2c6" font-size="20">EST. SOURCE CONTEXT</text>
+    <text x="850" y="585" fill="#f4f7ff" font-size="48" font-weight="700">~32.7k</text>
+    <text x="850" y="622" fill="#91a2c6" font-size="19">tokens across likely touchpoints</text>
+  </g>
+  <line x1="120" y1="690" x2="1480" y2="690" stroke="#263557" stroke-width="2"/>
+  <text x="120" y="755" fill="#f4f7ff" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="600">The change looked local. The reasoning surface wasn't.</text>
+  <text x="120" y="795" fill="#91a2c6" font-family="Inter,Arial,sans-serif" font-size="19">Static analysis flags dynamic imports and lookups explicitly; it does not pretend to see runtime behavior.</text>
+  <text x="1480" y="795" fill="#8ea4d8" font-family="Inter,Arial,sans-serif" font-size="18" text-anchor="end">github.com/moonlettai/cxcap</text>
+</svg>
