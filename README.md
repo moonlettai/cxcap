@@ -292,6 +292,10 @@ The goal is not a flattering score. It is independent structural evidence before
 
 On a public Django checkout, the intent `add session expiry to authenticated requests` surfaced 22 production files, 3 verification files, 14 cross-boundary edges, 4 cycles, and dynamic-analysis uncertainty across 10 areas. Django is not “bad”; the result shows that a mature codebase can make a supposedly local change expensive to reason about.
 
+## Read the reasoning
+
+For the broader argument and a reproducible proof, see [AI Coding Agents Have a Complexity Feedback Problem](docs/ai-coding-complexity-feedback.md). It explains why passing tests and structural feedback answer different questions, and invites adversarial testing rather than positive reviews.
+
 ## Help and issues
 
 - CLI help: `cxcap --help` and `cxcap audit --help`
