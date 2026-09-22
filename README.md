@@ -269,6 +269,29 @@ CXCAP analyzes source locally.
 - No LLM or model download is required.
 - The only network activity is the optional daily release check and explicit updates.
 
+## Try to break CXCAP
+
+CXCAP is intentionally falsifiable. Run it on the repository you have built most heavily with AI and give it your next real task:
+
+```sh
+cargo install cxcap
+cxcap audit . --intent "<your next real change>"
+```
+
+Then report what happened:
+
+- a useful finding;
+- a false positive;
+- a missed dependency or exposure;
+- a confusing output;
+- a repository where the analysis is not meaningful.
+
+The goal is not a flattering score. It is independent structural evidence before another agent change compounds complexity. Include the repository language, command used, and relevant output. Do not post private source code or secrets.
+
+### A real proof
+
+On a public Django checkout, the intent `add session expiry to authenticated requests` surfaced 22 production files, 3 verification files, 14 cross-boundary edges, 4 cycles, and dynamic-analysis uncertainty across 10 areas. Django is not “bad”; the result shows that a mature codebase can make a supposedly local change expensive to reason about.
+
 ## Help and issues
 
 - CLI help: `cxcap --help` and `cxcap audit --help`
