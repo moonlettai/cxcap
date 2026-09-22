@@ -288,6 +288,12 @@ Then report what happened:
 
 The goal is not a flattering score. It is independent structural evidence before another agent change compounds complexity. Include the repository language, command used, and relevant output. Do not post private source code or secrets.
 
+### The proof, at a glance
+
+![CXCAP Django change-surface receipt](docs/assets/cxcap-django-receipt.svg)
+
+A small-looking request can expose a wide reasoning surface. The receipt above is derived from a public Django checkout and the reproducible run described below; it is evidence, not a quality grade.
+
 ### A real proof
 
 On a public Django checkout, the intent `add session expiry to authenticated requests` surfaced 22 production files, 3 verification files, 14 cross-boundary edges, 4 cycles, and dynamic-analysis uncertainty across 10 areas. Django is not “bad”; the result shows that a mature codebase can make a supposedly local change expensive to reason about.
