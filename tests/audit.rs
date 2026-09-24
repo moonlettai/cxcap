@@ -2081,6 +2081,25 @@ fn py_from_import_submodule_edges() {
     assert!(deps("other/get.py").is_empty(), "phantom edge from a function name");
 }
 
+// With --focus, CONSTRAINTS cautions name only warnings on the target.
+#[test]
+fn cautions_scoped_to_focus() {
+    let t = TestDir::new();
+    let branches: String = (0..20).map(|i| format!("    if x == {i}:\n        return {i}\n")).collect();
+    t.write("sc/hot.py", &format!("def dense(x):\n{branches}    return -1\n"));
+    t.write("sc/calm.py", "def f():\n    return 1\n");
+    let whole = audit_json(&t.sub("sc"), &[]);
+    let g = |r: &serde_json::Value| -> Vec<String> {
+        r["guidance"].as_array().unwrap().iter().filter_map(|v| v.as_str().map(str::to_string)).collect()
+    };
+    assert!(g(&whole).iter().any(|l| l.starts_with("CAUTION hot.py")), "{:?}", g(&whole));
+    let focused = g(&audit_json(&t.sub("sc"), &["--focus", "calm.py"]));
+    assert!(!focused.iter().any(|l| l.contains("hot.py")), "{focused:?}");
+    assert!(focused.iter().any(|l| l.starts_with("CAUTION: no HIGH warning names a file in the target")), "{focused:?}");
+    let on_hot = g(&audit_json(&t.sub("sc"), &["--focus", "hot.py"]));
+    assert!(on_hot.iter().any(|l| l.starts_with("CAUTION hot.py")), "{on_hot:?}");
+}
+
 // Extensionless files are labeled plainly in text; JSON keeps its key.
 #[test]
 fn unscored_extensionless_label() {
