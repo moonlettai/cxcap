@@ -2043,3 +2043,32 @@ fn bare_top_import_prefers_package_root() {
     let rep = audit_json(t.path.as_path(), &[]);
     assert!(rep["cycles"].as_array().unwrap().is_empty());
 }
+
+// `from pkg import submodule` draws an edge to the submodule file; a
+// function name never becomes a phantom edge to a same-named file.
+#[test]
+fn py_from_import_submodule_edges() {
+    let t = TestDir::new();
+    t.write("sub/app/__init__.py", "");
+    t.write("sub/app/crud.py", "def get():\n    return 1\n");
+    t.write("sub/app/helpers.py", "def h():\n    return 2\n");
+    t.write("sub/app/api/__init__.py", "");
+    t.write("sub/app/api/users.py", "from app import crud\n\ndef u():\n    return crud.get()\n");
+    t.write("sub/app/api/items.py", "from .. import helpers\n\ndef i():\n    return helpers.h()\n");
+    t.write("sub/app/api/orders.py", "from app.crud import get\n\ndef o():\n    return get()\n");
+    t.write("sub/other/get.py", "def x():\n    return 3\n");
+    let deps = |target: &str| -> Vec<String> {
+        let rep = audit_json(&t.sub("sub"), &["--focus", target]);
+        rep["focus"]["dependents"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter_map(|d| d["path"].as_str().map(str::to_string))
+            .collect()
+    };
+    let crud = deps("app/crud.py");
+    assert!(crud.contains(&"app/api/users.py".to_string()), "{crud:?}");
+    assert!(crud.contains(&"app/api/orders.py".to_string()), "{crud:?}");
+    assert!(deps("app/helpers.py").contains(&"app/api/items.py".to_string()));
+    assert!(deps("other/get.py").is_empty(), "phantom edge from a function name");
+}
