@@ -72,6 +72,9 @@ pub struct FocusRep {
     pub hotspots_inside: Vec<String>,
     pub cycles_through: Vec<CycleRef>,
     pub assessment: String,
+    /// Every file matched by the focus pattern (`top` is truncated).
+    #[serde(skip)]
+    pub members: Vec<String>,
 }
 
 fn assess_focus(
@@ -342,7 +345,10 @@ pub fn build_focus(
         &hotspots_inside,
         &cycles_through,
     );
+    let mut members: Vec<String> = ff.iter().map(|&i| files[i].path.clone()).collect();
+    members.sort();
     Some(FocusRep {
+        members,
         pattern: focus.to_string(),
         files: ff.len(),
         complexity: fcx,
