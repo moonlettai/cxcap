@@ -12,7 +12,7 @@ CXCAP is a fast, local, read-only CLI for one question that is easy to ask too l
 
 It analyzes code structure, runtime-static dependencies, coupling, cycles, hotspots, transitive exposure, duplication, and context surface so you can scope a change before adding more complexity to the system.
 
-CXCAP does **not** decide what to build, grade code quality, or predict engineering effort. It gives humans and coding agents concrete evidence to plan against.
+CXCAP does **not** decide what to build, grade code quality, or predict engineering effort. It gives engineers and AI coding agents concrete evidence to plan against.
 
 ## Why use CXCAP?
 
@@ -132,7 +132,7 @@ Treat the result as a **ranked starting point**, not ground truth. Static retrie
 
 ### `--json`
 
-Plain output is optimized for quick human/agent reading. Add `--json` for automation, large reports, or before/after comparisons.
+Plain output is optimized for quick engineer/agent reading. Add `--json` for automation, large reports, or before/after comparisons.
 
 ## Turn evidence into a plan
 
