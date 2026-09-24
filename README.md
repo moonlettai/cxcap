@@ -274,7 +274,8 @@ CXCAP analyzes source locally.
 CXCAP is intentionally falsifiable. Run it on the repository you have built most heavily with AI and give it your next real task:
 
 ```sh
-cargo install cxcap
+curl -fsSL https://github.com/moonlettai/cxcap/releases/latest/download/install.sh -o install.sh
+sh install.sh            # or: cargo install cxcap
 cxcap audit . --intent "<your next real change>"
 ```
 
