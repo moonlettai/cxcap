@@ -444,75 +444,8 @@ pub fn render_text(rep: &Report, top_n: usize) -> String {
         ));
     }
     l.push(format!("VERDICT: {} \u{2014} {}", rep.verdict, rep.verdict_why));
-    l.push(String::new());
-    l.push(format!(
-        "TOP {} HOTSPOTS (hotspot 0-100 = 35% LOC + 35% complexity + 20% coupling + 10% funcs):",
-        top_n.min(rep.hotspots.len())
-    ));
-    for h in &rep.hotspots {
-        // Hotspot suffix: only non-zero signals print (single use).
-        let mut extra = String::new();
-        if h.max_func_cx.unwrap_or(0) > 0 {
-            extra.push_str(&format!(" maxFuncCx={}", h.max_func_cx.unwrap_or(0)));
-        }
-        if h.dup_lines.unwrap_or(0) > 0 {
-            extra.push_str(&format!(" dup={}", h.dup_lines.unwrap_or(0)));
-        }
-        l.push(format!(
-            "  {:5.1}  {}  LOC={} cx={} fn={} nest={} coup={}{}",
-            py_round1(h.hotspot.unwrap_or(0.0)),
-            h.path,
-            h.loc,
-            h.complexity,
-            h.funcs,
-            h.max_nesting,
-            h.coupling.unwrap_or(0),
-            extra
-        ));
-    }
-    if !rep.test_hotspots.is_empty() {
-        l.push(format!(
-            "HEAVIEST TESTS+EXAMPLES (verification surface, not change targets): {}",
-            rep.test_hotspots
-                .iter()
-                .map(|t| format!("{} cx={}", t.path, t.complexity))
-                .collect::<Vec<_>>()
-                .join(", ")
-        ));
-    }
-    if !rep.clones.is_empty() {
-        l.push(format!(
-            "CLONES (cross-file copy-paste, fix in all places or extract): {}",
-            rep.clones
-                .iter()
-                .map(|(a, b, n)| format!("{a} \u{2194} {b} ({})", n1(*n, "block")))
-                .collect::<Vec<_>>()
-                .join(", ")
-        ));
-    }
-    l.push(String::new());
-    l.push("FOLDERS by complexity:".to_string());
-    for fo in &rep.folders {
-        l.push(format!(
-            "  {:5.1}%  {}/  cx={} LOC={}",
-            py_round1(fo.share),
-            fo.dir,
-            fo.complexity,
-            fo.loc
-        ));
-    }
-    l.push(String::new());
-    l.push(format!(
-        "WARNINGS ({} total, showing {}, HIGH first):",
-        rep.warnings.len(),
-        20.min(rep.warnings.len())
-    ));
-    if rep.warnings.is_empty() {
-        l.push("  (none)".to_string());
-    }
-    for x in rep.warnings.iter().take(20) {
-        l.push(format!("  [{}] {}: {}", x.severity, x.r#where, x.msg));
-    }
+    // The answer to the question asked (--focus / --intent) comes right
+    // after the verdict, before the repo-wide map.
     if let Some(f) = &rep.focus {
         l.push(String::new());
         l.push(format!(
@@ -602,6 +535,75 @@ pub fn render_text(rep: &Report, top_n: usize) -> String {
                 .collect();
             l.push(format!("  UNCERTAINTY: {}", us.join("; ")));
         }
+    }
+    l.push(String::new());
+    l.push(format!(
+        "TOP {} HOTSPOTS (hotspot 0-100 = 35% LOC + 35% complexity + 20% coupling + 10% funcs):",
+        top_n.min(rep.hotspots.len())
+    ));
+    for h in &rep.hotspots {
+        // Hotspot suffix: only non-zero signals print (single use).
+        let mut extra = String::new();
+        if h.max_func_cx.unwrap_or(0) > 0 {
+            extra.push_str(&format!(" maxFuncCx={}", h.max_func_cx.unwrap_or(0)));
+        }
+        if h.dup_lines.unwrap_or(0) > 0 {
+            extra.push_str(&format!(" dup={}", h.dup_lines.unwrap_or(0)));
+        }
+        l.push(format!(
+            "  {:5.1}  {}  LOC={} cx={} fn={} nest={} coup={}{}",
+            py_round1(h.hotspot.unwrap_or(0.0)),
+            h.path,
+            h.loc,
+            h.complexity,
+            h.funcs,
+            h.max_nesting,
+            h.coupling.unwrap_or(0),
+            extra
+        ));
+    }
+    if !rep.test_hotspots.is_empty() {
+        l.push(format!(
+            "HEAVIEST TESTS+EXAMPLES (verification surface, not change targets): {}",
+            rep.test_hotspots
+                .iter()
+                .map(|t| format!("{} cx={}", t.path, t.complexity))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    if !rep.clones.is_empty() {
+        l.push(format!(
+            "CLONES (cross-file copy-paste, fix in all places or extract): {}",
+            rep.clones
+                .iter()
+                .map(|(a, b, n)| format!("{a} \u{2194} {b} ({})", n1(*n, "block")))
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
+    }
+    l.push(String::new());
+    l.push("FOLDERS by complexity:".to_string());
+    for fo in &rep.folders {
+        l.push(format!(
+            "  {:5.1}%  {}/  cx={} LOC={}",
+            py_round1(fo.share),
+            fo.dir,
+            fo.complexity,
+            fo.loc
+        ));
+    }
+    l.push(String::new());
+    l.push(format!(
+        "WARNINGS ({} total, showing {}, HIGH first):",
+        rep.warnings.len(),
+        20.min(rep.warnings.len())
+    ));
+    if rep.warnings.is_empty() {
+        l.push("  (none)".to_string());
+    }
+    for x in rep.warnings.iter().take(20) {
+        l.push(format!("  [{}] {}: {}", x.severity, x.r#where, x.msg));
     }
     l.push(String::new());
     l.push("CONSTRAINTS FOR YOUR NEXT DECISION:".to_string());
