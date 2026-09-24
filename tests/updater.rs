@@ -101,13 +101,22 @@ fn setup(port: u16, version: &str, with_skill: bool, corrupt: bool) -> Ctx {
     // Wait for readiness via the real check path.
     let base_url = format!("http://127.0.0.1:{port}/manifest.json");
     for _ in 0..40 {
-        let out = Command::new(root.join("install").join("cxcap"))
+        let out = match Command::new(root.join("install").join("cxcap"))
             .args(["update", "--check"])
             .env("CXCAP_UPDATE_MANIFEST", &base_url)
             .env("HOME", root.join("home"))
             .env("XDG_CACHE_HOME", root.join("cache"))
             .output()
-            .expect("run update --check");
+        {
+            Ok(out) => out,
+            // ETXTBSY: a child forked by a parallel test briefly inherited
+            // the write handle from fs::copy above. Transient; try again.
+            Err(e) if e.raw_os_error() == Some(26) => {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+                continue;
+            }
+            Err(e) => panic!("run update --check: {e:?}"),
+        };
         let text = format!(
             "{}{}",
             String::from_utf8_lossy(&out.stdout),
