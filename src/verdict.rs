@@ -331,12 +331,16 @@ pub fn build_verdict(
         None
     };
     let top_share = god.map(|g| g.share).unwrap_or(0.0);
-    let top_dir = god.map(|g| format!("{}/", g.dir)).unwrap_or("\u{2014}".to_string());
+    // Name the concentration only when a folder actually qualifies; SEVERE
+    // reached through HIGH warnings or average complexity has none to name.
+    let concentration = god
+        .map(|g| format!("; concentration in {}/", g.dir))
+        .unwrap_or_default();
     if highs >= 8 || avg_cx > 60.0 || top_share > 60.0 {
         (
             "SEVERE".to_string(),
             format!(
-                "{}; avg complexity/file {}; concentration in {top_dir}",
+                "{}; avg complexity/file {}{concentration}",
                 crate::fmt::n1(highs, "HIGH warning"),
                 crate::fmt::py_fmt1(avg_cx)
             ),
@@ -361,5 +365,35 @@ pub fn build_verdict(
             "LOW".to_string(),
             format!("avg complexity/file {}; {}", crate::fmt::py_fmt1(avg_cx), crate::fmt::n1(warnings.len(), "warning")),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn folder(dir: &str, share: f64) -> FolderRow {
+        FolderRow { dir: dir.to_string(), complexity: 0, loc: 0, share }
+    }
+
+    fn high(r#where: &str) -> Warning {
+        Warning { severity: "HIGH", r#where: r#where.to_string(), msg: String::new() }
+    }
+
+    #[test]
+    fn severe_without_concentration_names_no_folder() {
+        let warnings: Vec<Warning> = (0..8).map(|i| high(&format!("src/f{i}.rs"))).collect();
+        let (verdict, why) = build_verdict(27, 33, 1603, &warnings, &[folder("src", 100.0)], false, None);
+        assert_eq!(verdict, "SEVERE");
+        assert!(!why.contains("concentration"), "{why}");
+        assert!(!why.contains('\u{2014}'), "{why}");
+    }
+
+    #[test]
+    fn severe_with_concentration_names_the_folder() {
+        let folders = [folder("src/core", 70.0), folder("src/cli", 20.0)];
+        let (verdict, why) = build_verdict(12, 12, 100, &[], &folders, false, None);
+        assert_eq!(verdict, "SEVERE");
+        assert!(why.ends_with("; concentration in src/core/"), "{why}");
     }
 }
