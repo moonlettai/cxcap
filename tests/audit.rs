@@ -2080,3 +2080,22 @@ fn py_from_import_submodule_edges() {
     assert!(deps("app/helpers.py").contains(&"app/api/items.py".to_string()));
     assert!(deps("other/get.py").is_empty(), "phantom edge from a function name");
 }
+
+// Extensionless files are labeled plainly in text; JSON keeps its key.
+#[test]
+fn unscored_extensionless_label() {
+    let t = TestDir::new();
+    t.write("lbl/a.py", "def f():\n    return 1\n");
+    t.write("lbl/LICENSE", "MIT\n");
+    let out = std::process::Command::new(common::bin())
+        .arg("audit")
+        .arg(t.sub("lbl"))
+        .output()
+        .expect("run cxcap binary");
+    let text = String::from_utf8_lossy(&out.stdout).into_owned();
+    assert!(text.contains("1x (no extension)"), "{text}");
+    let unscored = text.lines().find(|l| l.starts_with("unscored")).unwrap_or("");
+    assert!(!unscored.contains("(none)"), "{unscored}");
+    let rep = audit_json(&t.sub("lbl"), &[]);
+    assert!(rep["unscored_top"].to_string().contains("(none)"), "{}", rep["unscored_top"]);
+}
