@@ -31,6 +31,8 @@ pub struct IntentRep {
     pub query: String,
     pub seeds: Vec<IntentSeed>,
     pub expanded: Vec<String>,
+    /// The context set hit INTENT_EXPAND_CAP; more files may be in reach.
+    pub capped: bool,
     pub context_lines: Vec<String>,
     pub component_tangles: Vec<String>,
     pub uncertainty: Vec<OpacityNote>,
@@ -62,6 +64,7 @@ pub fn build_intent(
     let edges2: Vec<(String, String)> =
         edges.iter().map(|(a, b, _)| (a.clone(), b.clone())).collect();
     let expanded = crate::lexical::expand_seeds(&seed_paths, &edges2, 1, INTENT_EXPAND_CAP);
+    let capped = expanded.len() >= INTENT_EXPAND_CAP;
     let loc: HashMap<String, (u32, String, u32)> = files
         .iter()
         .map(|f| (f.path.clone(), (f.loc, f.kind.to_string(), f.complexity)))
@@ -129,6 +132,7 @@ pub fn build_intent(
         query: q.to_string(),
         seeds,
         expanded,
+        capped,
         context_lines: ctx.lines,
         component_tangles: tangles,
         uncertainty,
