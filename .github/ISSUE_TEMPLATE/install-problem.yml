@@ -1,0 +1,29 @@
+name: Install problem
+description: The installer, cargo install, or update failed.
+labels: [install]
+body:
+  - type: dropdown
+    id: method
+    attributes:
+      label: Install method
+      options:
+        - install.sh
+        - cargo install cxcap
+        - From source
+        - cxcap update
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: OS and architecture
+      placeholder: macOS 15 arm64 / Ubuntu 24.04 x86-64
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Full command and output
+      render: text
+    validations:
+      required: true

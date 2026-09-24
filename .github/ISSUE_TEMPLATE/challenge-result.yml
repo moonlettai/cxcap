@@ -1,0 +1,49 @@
+name: Challenge result
+description: You ran CXCAP on a real repository. Tell us what it got right or wrong.
+labels: [challenge-result]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Useful findings, false positives, missed dependencies and "this was pointless here" are all welcome. Please don't paste private source code or secrets.
+  - type: input
+    id: repo
+    attributes:
+      label: Repository
+      description: Public URL, or a description if private (language, size, how much of it was AI-written).
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command
+      placeholder: cxcap audit . --intent "<your real change>"
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      options:
+        - Useful finding
+        - False positive
+        - Missed dependency or exposure
+        - Confusing output
+        - Analysis not meaningful for this repository
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Relevant output
+      render: text
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: cxcap --version
