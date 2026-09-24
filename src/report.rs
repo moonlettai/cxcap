@@ -114,6 +114,7 @@ pub fn build_guidance(
     verdict: &str,
     warnings: &[Warning],
     focus_rep: Option<&crate::focus::FocusRep>,
+    target: Option<&std::collections::HashSet<String>>,
 ) -> Vec<String> {
     let mut g: Vec<String> = Vec::new();
     if verdict == "N/A" {
@@ -128,8 +129,23 @@ pub fn build_guidance(
     } else {
         g.push("PROCEED: complexity is low \u{2014} prefer the straightforward change, but keep new functions under complexity 10.".to_string());
     }
-    for x in warnings.iter().filter(|x| x.severity == "HIGH").take(5) {
+    // With --focus/--intent, cautions name only warnings that touch the
+    // target; the repo-wide list stays under WARNINGS.
+    let touches = |x: &&Warning| match target {
+        Some(t) => x
+            .r#where
+            .split(" \u{2194} ")
+            .map(|w| w.split(" (+").next().unwrap_or(w))
+            .any(|w| t.contains(w)),
+        None => true,
+    };
+    let mut cautions = 0;
+    for x in warnings.iter().filter(|x| x.severity == "HIGH").filter(touches).take(5) {
         g.push(format!("CAUTION {}: {}.", x.r#where, x.msg));
+        cautions += 1;
+    }
+    if target.is_some() && cautions == 0 {
+        g.push("CAUTION: no HIGH warning names a file in the target; repo-wide warnings are listed above.".to_string());
     }
     if let Some(f) = focus_rep {
         g.push(format!("FOCUS: {}", f.assessment));
@@ -297,7 +313,20 @@ pub fn assemble(mut a: AssembleArgs) -> Report {
     let hot_paths: Vec<String> = hot.iter().map(|&i| a.files[i].path.clone()).collect();
     let focus_rep = crate::focus::build_focus(&code, &a.files, cx_total, n_code, a.focus.as_deref(), &a.edges, &a.cycles, &hot_paths);
     let intent_rep = crate::intent::build_intent(a.intent.as_deref(), &a.files, &a.edges, &a.cycles, &hot_paths, &a.root);
-    let guidance = build_guidance(&verdict, &warnings, focus_rep.as_ref());
+    let target: Option<std::collections::HashSet<String>> =
+        if focus_rep.is_some() || intent_rep.is_some() {
+            let mut t: std::collections::HashSet<String> = std::collections::HashSet::new();
+            if let Some(f) = &focus_rep {
+                t.extend(f.members.iter().cloned());
+            }
+            if let Some(it) = &intent_rep {
+                t.extend(it.expanded.iter().cloned());
+            }
+            Some(t)
+        } else {
+            None
+        };
+    let guidance = build_guidance(&verdict, &warnings, focus_rep.as_ref(), target.as_ref());
 
     let scored = |e: &str| {
         crate::dispatch::is_code_ext(e)
