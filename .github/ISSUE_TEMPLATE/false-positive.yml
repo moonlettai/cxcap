@@ -1,0 +1,28 @@
+name: False positive or missed exposure
+description: CXCAP reported something that isn't there, or missed something that is.
+labels: [false-positive]
+body:
+  - type: input
+    id: command
+    attributes:
+      label: Command
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: The output line(s) in question
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: reality
+    attributes:
+      label: What is actually true in the code?
+      description: A minimal snippet or public file link helps most. No private code or secrets.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: cxcap --version
