@@ -16,6 +16,10 @@ pub struct PyImport {
     pub level: u32,
     pub type_only: bool,
     pub deferred: bool,
+    /// Names bound by `from module import a, b` (pre-alias). A name may be
+    /// a submodule (`from pkg import crud`); resolution checks that.
+    #[serde(skip)]
+    pub names: Vec<String>,
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -482,9 +486,14 @@ pub fn analyze_python(text: &str) -> Result<PyMetrics, String> {
                         branch!();
                         let is_tc = n
                             .child_by_field_name("condition")
-                            .map(|c| {
-                                c.kind() == "identifier"
-                                    && node_text(&c, bytes) == "TYPE_CHECKING"
+                            .map(|c| match c.kind() {
+                                "identifier" => node_text(&c, bytes) == "TYPE_CHECKING",
+                                // `typing.TYPE_CHECKING`, `t.TYPE_CHECKING`
+                                "attribute" => c
+                                    .child_by_field_name("attribute")
+                                    .map(|a| node_text(&a, bytes) == "TYPE_CHECKING")
+                                    .unwrap_or(false),
+                                _ => false,
                             })
                             .unwrap_or(false);
                         let entry = depth;
@@ -584,6 +593,7 @@ pub fn analyze_python(text: &str) -> Result<PyMetrics, String> {
                                 level: 0,
                                 type_only: t,
                                 deferred,
+                                names: Vec::new(),
                             });
                         }
                         // No children need walking (names carry no branches).
@@ -599,6 +609,7 @@ pub fn analyze_python(text: &str) -> Result<PyMetrics, String> {
                         let mut module = String::new();
                         let mut level = 0u32;
                         let mut seen_import_kw = false;
+                        let mut names: Vec<String> = Vec::new();
                         let mut cursor = n.walk();
                         for ch in n.children(&mut cursor) {
                             match ch.kind() {
@@ -609,6 +620,13 @@ pub fn analyze_python(text: &str) -> Result<PyMetrics, String> {
                                             .chars()
                                             .filter(|c| !c.is_whitespace())
                                             .collect();
+                                    } else if seen_import_kw {
+                                        names.push(node_text(&ch, bytes).trim().to_string());
+                                    }
+                                }
+                                "aliased_import" if seen_import_kw => {
+                                    if let Some(nm) = ch.child_by_field_name("name") {
+                                        names.push(node_text(&nm, bytes).trim().to_string());
                                     }
                                 }
                                 "relative_import" => {
@@ -640,6 +658,7 @@ pub fn analyze_python(text: &str) -> Result<PyMetrics, String> {
                             level,
                             type_only: t,
                             deferred,
+                            names,
                         });
                     }
                     "future_import_statement" => {
@@ -651,6 +670,7 @@ pub fn analyze_python(text: &str) -> Result<PyMetrics, String> {
                             level: 0,
                             type_only: type_only > 0,
                             deferred,
+                            names: Vec::new(),
                         });
                     }
                     "type_alias_statement" => {
