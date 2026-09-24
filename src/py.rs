@@ -482,9 +482,14 @@ pub fn analyze_python(text: &str) -> Result<PyMetrics, String> {
                         branch!();
                         let is_tc = n
                             .child_by_field_name("condition")
-                            .map(|c| {
-                                c.kind() == "identifier"
-                                    && node_text(&c, bytes) == "TYPE_CHECKING"
+                            .map(|c| match c.kind() {
+                                "identifier" => node_text(&c, bytes) == "TYPE_CHECKING",
+                                // `typing.TYPE_CHECKING`, `t.TYPE_CHECKING`
+                                "attribute" => c
+                                    .child_by_field_name("attribute")
+                                    .map(|a| node_text(&a, bytes) == "TYPE_CHECKING")
+                                    .unwrap_or(false),
+                                _ => false,
                             })
                             .unwrap_or(false);
                         let entry = depth;
