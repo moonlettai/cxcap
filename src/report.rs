@@ -575,8 +575,13 @@ pub fn render_text(rep: &Report, top_n: usize) -> String {
             l.push(format!("  LIKELY TOUCHPOINTS: {}", tops.join("; ")));
         }
         if !it.expanded.is_empty() {
+            let cap = if it.capped {
+                format!(" (capped at {} files; more may be in reach)", it.expanded.len())
+            } else {
+                String::new()
+            };
             l.push(format!(
-                "  CONTEXT SURFACE: {}; files: {}",
+                "  CONTEXT SURFACE{cap}: {}; files: {}",
                 it.context_lines.join("; "),
                 it.expanded.join(", ")
             ));

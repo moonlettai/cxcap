@@ -326,3 +326,33 @@ fn real_analyzer_names_untruncated() {
         lexical::rank("helper7", &files, 3).into_iter().map(|(p, _)| p).collect();
     assert_eq!(ranked[0], "util/many.ts");
 }
+
+#[test]
+fn intent_context_cap_is_disclosed() {
+    // One hub imported by 40 files: the 1-hop expansion must hit the cap and say so.
+    let t = Tmp::new();
+    t.write("billing/invoice.ts", "export function invoiceTotal(n: number) { return n; }\n");
+    for i in 0..40 {
+        t.write(
+            &format!("views/page{i:02}.ts"),
+            "import { invoiceTotal } from '../billing/invoice';\nexport const v = invoiceTotal(1);\n",
+        );
+    }
+    let rep = audit_json(&t.path, &["--intent", "invoice total"]);
+    let it = rep.get("intent").expect("intent block");
+    assert_eq!(it.get("capped").and_then(|c| c.as_bool()), Some(true));
+    assert_eq!(it.get("expanded").and_then(|e| e.as_array()).map(|a| a.len()), Some(25));
+
+    let small = audit_json(&fixture_repo().path, &["--intent", "session config"]);
+    assert_eq!(small["intent"].get("capped").and_then(|c| c.as_bool()), Some(false));
+
+    let out = std::process::Command::new(common::bin())
+        .arg("audit")
+        .arg(&t.path)
+        .arg("--intent")
+        .arg("invoice total")
+        .output()
+        .expect("run cxcap binary");
+    let text = String::from_utf8_lossy(&out.stdout).into_owned();
+    assert!(text.contains("CONTEXT SURFACE (capped at 25 files; more may be in reach)"), "{text}");
+}
