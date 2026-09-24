@@ -287,6 +287,14 @@ fn cycles() {
     );
     let rt = audit_json(&t.sub("tcyc"), &[]);
     assert!(!rt["warnings"].as_array().unwrap().iter().any(|w| w["msg"].as_str().unwrap().contains("cycle")));
+    // Qualified guards (`typing.TYPE_CHECKING`, `t.TYPE_CHECKING`) are erased too.
+    t.write("qcyc/a.py", "from b import B\n\ndef fa():\n    return B()\n");
+    t.write(
+        "qcyc/b.py",
+        "import typing as t\nif t.TYPE_CHECKING:\n    from a import A\n\ndef fb():\n    return 2\n",
+    );
+    let rq = audit_json(&t.sub("qcyc"), &[]);
+    assert!(rq["cycles"].as_array().unwrap().is_empty(), "{}", rq["cycles"]);
     t.write("lcyc/p.py", "def fp():\n    from q import Q\n    return Q()\n");
     t.write("lcyc/q.py", "from p import P\n\ndef fq():\n    return P()\n");
     let rl = audit_json(&t.sub("lcyc"), &[]);
