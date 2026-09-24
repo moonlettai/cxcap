@@ -1,18 +1,18 @@
 # AI coding agents have a complexity feedback problem
 
-Frontier coding agents are remarkably good now. Give one a well-scoped task in a real repository and it will usually find the files, write the change, run the tests and hand you a green build. That's now routine.
+Frontier AI coding agents are remarkably good now. Give one a well-scoped task in a real repository and it will usually find the files, write the change, run the tests and hand you a green build. That's now routine.
 
-That success changes the question worth asking. It's no longer only *can the agent complete this task?* It's also *what does the repository look like after the hundredth task, when every new agent session inherits the structure the previous sessions left behind?*
+That success changes the question worth asking. It's no longer only *can the AI coding agent complete this task?* It's also *what does the repository look like after the hundredth task, when every new AI coding agent session inherits the structure the previous sessions left behind?*
 
 ## Faster generation changes the economics
 
-When writing code was slow, a human had to absorb every structural decision while writing it. The effort of typing acted as a brake: you felt a module getting too big because you kept scrolling through it.
+When writing code was slow, an engineer had to absorb every structural decision while writing it. The effort of typing acted as a brake: you felt a module getting too big because you kept scrolling through it.
 
-Agents remove most of that brake. Code is cheap to produce, so the scarce resource moves somewhere else, to *understanding*: whoever makes the next change, human or agent, has to rebuild a mental model of the code it's about to touch.
+AI coding agents remove most of that brake. Code is cheap to produce, so the scarce resource moves somewhere else, to *understanding*: whoever makes the next change, engineer or AI coding agent, has to rebuild a mental model of the code it's about to touch.
 
 ## Local correctness is not global structural health
 
-An agent optimizes the task in front of it. Tests check that task's behavior. Neither is designed to answer a different question:
+An AI coding agent optimizes the task in front of it. Tests check that task's behavior. Neither is designed to answer a different question:
 
 > Tests answer *"did the change work?"* The structural question is *"what complexity is this change interacting with, and is it adding more?"*
 
@@ -20,19 +20,19 @@ A change can pass every test and still add a dependency edge between two modules
 
 ## Complexity compounds across iterations
 
-One such change is harmless. The trouble is that agents make many of them, quickly, and each one looks reasonable in isolation. After enough iterations the codebase gets harder to work with, even though no individual step was wrong.
+One such change is harmless. The trouble is that AI coding agents make many of them, quickly, and each one looks reasonable in isolation. After enough iterations the codebase gets harder to work with, even though no individual step was wrong.
 
 External data points in the same direction. GitClear, analyzing 623 million code changes from 2023 to 2026, reports duplicated code blocks up 81% and refactoring-style "moved" code falling to 3.8% of changed lines. It also finds new code connects to existing functions 35% less often than in 2023. GitClear is careful to say its headline "is not 'AI writes bad code'". These are correlations across a period of rising AI use, not proof of cause.
 
 A peer-reviewed Carnegie Mellon study (MSR 2026) is more direct. In open-source projects that adopted Cursor, it found "a … transient increase in … velocity, along with a substantial and persistent increase in static analysis warnings and code complexity."
 
-## Future agents must reason through that structure
+## Future AI coding agents must reason through that structure
 
-The output of today's agent becomes the context of tomorrow's agent. Every extra coupling, cycle or duplicated path is something the next session has to discover, read and hold in context before it can change anything safely. And that session is often starting from zero, with no memory of why the structure looks the way it does.
+The output of today's AI coding agent becomes the context of tomorrow's AI coding agent. Every extra coupling, cycle or duplicated path is something the next session has to discover, read and hold in context before it can change anything safely. And that session is often starting from zero, with no memory of why the structure looks the way it does.
 
 ## Billing makes that workload visible
 
-This part is new. Agent usage is metered, and vendors say plainly what drives the meter:
+This part is new. AI coding agent usage is metered, and vendors say plainly what drives the meter:
 
 - Anthropic's Claude Code docs list "codebase size" among the factors that make costs "vary widely", and note that "token costs scale with context size."
 - GitHub's Copilot billing docs: "A complex agentic session working across a large codebase will consume significantly more usage than a quick question in chat."
@@ -46,13 +46,13 @@ So technical debt used to be priced mainly in future developer time. Now it can 
 
 DORA's 2025 research found that AI adoption now goes with higher delivery throughput and still with lower stability. It also found that teams in loosely coupled architectures with fast feedback loops see the gains, while tightly coupled ones see "little or no benefit". DORA's framing is that AI amplifies what is already there.
 
-Tests are behavioral verification. Code review is human judgment, and it's increasingly the bottleneck: DORA notes that time saved writing code is often spent again on "auditing and verification". What's usually missing is a cheap, independent, structural signal that someone (or something) can check *before* the change, not after the reviewer is already tired.
+Tests are behavioral verification. Code review is engineer judgment, and it's increasingly the bottleneck: DORA notes that time saved writing code is often spent again on "auditing and verification". What's usually missing is a cheap, independent, structural signal that someone (or something) can check *before* the change, not after the reviewer is already tired.
 
 ## Why I built CXCAP
 
-I built CXCAP because I was using frontier coding agents heavily and kept seeing the same failure mode. Individual tasks succeeded. Tests passed. Each iteration looked reasonable. But after enough iterations the codebase became progressively harder to work with.
+I built CXCAP because I was using frontier AI coding agents heavily and kept seeing the same failure mode. Individual tasks succeeded. Tests passed. Each iteration looked reasonable. But after enough iterations the codebase became progressively harder to work with.
 
-The agents were strong at the task directly in front of them, but they had no independent structural feedback loop telling them what complexity already surrounded the next change. That also started to matter economically: the harder the repository became to understand, the more context, reasoning and agent work future changes required.
+The AI coding agents were strong at the task directly in front of them, but they had no independent structural feedback loop telling them what complexity already surrounded the next change. That also started to matter economically: the harder the repository became to understand, the more context, reasoning and AI coding agent work future changes required.
 
 I wanted something outside the model, local, deterministic and read-only, that could inspect the repository before another change was made. That became CXCAP.
 
@@ -66,11 +66,11 @@ CXCAP is a CLI. Point it at a repository and it parses Python, JavaScript/TypeSc
 - **a bounded context set for a task described in plain English** (`--intent "<change>"`): likely touchpoints, the files around them, cross-boundary edges and cycles;
 - **uncertainty**: places where dynamic imports, `getattr` dispatch or registries mean the static picture is incomplete.
 
-It doesn't grade code, estimate effort or call a model. No index, no daemon, nothing uploaded. An agent can run it the same way a human does (the installer adds an agent skill for that).
+It doesn't grade code, estimate effort or call a model. No index, no daemon, nothing uploaded. An AI coding agent can run it the same way an engineer does (the installer adds an agent skill for that).
 
 A concrete run: on a public Django checkout I gave it the intent *"add session expiry to authenticated requests."* CXCAP's bounded context set (it considers at most 25 files) held 22 production files across 2 components, with 14 cross-boundary edges, 4 import cycles (1 load-time, 3 through function-level imports) and dynamic-analysis uncertainty in 10 places. It took under a second.
 
-That doesn't mean Django is bad. It's a mature, well-engineered framework. It means a request that *sounds* local sits inside a wider reasoning surface, and an agent should see that before it edits, not after.
+That doesn't mean Django is bad. It's a mature, well-engineered framework. It means a request that *sounds* local sits inside a wider reasoning surface, and an AI coding agent should see that before it edits, not after.
 
 ## Attempts to falsify it
 
@@ -90,7 +90,7 @@ A tool like this is only worth anything if it's wrong in visible, fixable ways. 
 
 ## Try to break it
 
-The claim I'm making is narrow: *AI coding needs a structural feedback loop, and one can be cheap, local and independent of the model.* If CXCAP is useless on your codebase, that's worth knowing too.
+The claim I'm making is narrow: *AI coding agents need a structural feedback loop, and one can be cheap, local and independent of the model.* If CXCAP is useless on your codebase, that's worth knowing too.
 
 Run it on the repository you've built most heavily with AI, and give it your next real change:
 
