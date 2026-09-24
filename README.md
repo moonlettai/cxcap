@@ -73,7 +73,7 @@ Useful options:
 ```sh
 sh install.sh --no-skill          # binary only
 sh install.sh --prefix=DIR        # custom install prefix
-CXCAP_VERSION=1.0.2 sh install.sh # install a specific version
+CXCAP_VERSION=1.0.3 sh install.sh # install a specific version
 ```
 
 If the installer adds `~/.local/bin` to your shell configuration, open a new shell afterwards (or export the PATH it prints).
