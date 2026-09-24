@@ -48,16 +48,76 @@ pub fn tokenize(text: &str) -> Vec<String> {
     out
 }
 
-/// Minimal generic singular normalization: strip a single trailing 's'
-/// (cycles->cycle) so plural/singular intent wording still localizes.
-/// 'ss' endings (class) and short tokens are left alone. Applied to both
+/// Light English stemming for intent queries and file vocab: strip common
+/// inflections (`-ing`, `-ed`, trailing `-s`) so "resizing" still matches
+/// `resize*` and "owned" still matches `owner`. Conservative guards keep
+/// short tokens and `ss` endings (class) untouched. Applied to both
 /// documents and queries, so it cannot create asymmetric matches.
 fn stem(tok: String) -> String {
-    if tok.len() > 3 && tok.ends_with('s') && !tok.ends_with("ss") {
-        tok[..tok.len() - 1].to_string()
-    } else {
-        tok
+    // Agent noun: owner -> own (so "owned" -> "own" meets it). Narrow to
+    // *-owner so "error", "mirror", "color" are untouched.
+    let mut t = tok;
+    if t.len() >= 5 && t.ends_with("owner") {
+        t.truncate(t.len() - 2);
+        return t;
     }
+    // -ies -> -y (stories -> story) before the generic -s strip.
+    if t.len() > 4 && t.ends_with("ies") {
+        t.truncate(t.len() - 3);
+        t.push('y');
+        return t;
+    }
+    // -ing with doubled-consonant collapse (resizing -> resize).
+    // Guarded to len>5 so short words ("ring", "king") are untouched.
+    // A trailing silent-e restores ("resiz" -> "resize").
+    if t.len() > 5 && t.ends_with("ing") {
+        let mut s = t.clone();
+        s.truncate(s.len() - 3);
+        let b = s.as_bytes();
+        if b.len() >= 2 && b[b.len() - 1] == b[b.len() - 2] {
+            s.truncate(s.len() - 1);
+        }
+        if s.len() <= 2 {
+            return t;
+        }
+        if s.ends_with("iz") || s.ends_with("az") || s.ends_with("ez") {
+            s.push('e');
+        }
+        return s;
+    }
+    // -ed (owned -> own). "eed" endings (need, agreed) left alone.
+    if t.len() > 4 && t.ends_with("ed") && !t.ends_with("eed") {
+        let mut s = t.clone();
+        s.truncate(s.len() - 2);
+        if s.len() <= 2 {
+            return t;
+        }
+        return s;
+    }
+    // Trailing -s (cycles->cycle); 'ss' endings (class) left alone.
+    if t.len() > 3 && t.ends_with('s') && !t.ends_with("ss") {
+        t.truncate(t.len() - 1);
+    }
+    t
+}
+/// Task-verb stopwords: generic request words ("add", "default", "minimum")
+/// otherwise pull in unrelated files (`AddUser.tsx`, `default_hooks`).
+/// Applied to the QUERY only — document vocab keeps every token, so a file
+/// genuinely about "adding" still matches a non-stopword query term.
+pub(crate) const STOPWORDS: &[&str] = &[
+    "add", "allow", "also", "always", "auto", "basic", "change", "check", "create", "current",
+    "data", "default", "do", "ensure", "existing", "fix", "for", "from", "get", "handle",
+    "improve", "include", "into", "make", "manage", "minimum", "missing", "need", "new",
+    "please", "proper", "remove", "request", "set", "should", "show", "simple", "support",
+    "take", "that", "their", "there", "thing", "this", "update", "use", "using", "want",
+    "with",
+];
+
+/// Drop stopwords from an already-stemmed query token list. Keeps at least
+/// one token: an all-stopword query ("add support") still searches.
+pub(crate) fn strip_stopwords(q: Vec<String>) -> Vec<String> {
+    let kept: Vec<String> = q.into_iter().filter(|t| !STOPWORDS.contains(&t.as_str())).collect();
+    kept
 }
 
 /// Document text for one file: path segments + symbol names.
@@ -102,11 +162,17 @@ fn score_doc(qtoks: &[String], toks: &[String], df: &HashMap<&str, usize>, n: f6
 
 /// BM25 rank of candidate files for an intent string.
 /// Returns (path, score) descending, deterministic ties by path.
+/// Query-side stopwords ("add", "default", "minimum") are dropped so generic
+/// task verbs don't pull in unrelated files; an all-stopword query keeps
+/// its tokens. A relative floor (35% of the top score) drops weak tail
+/// matches (0.19-style noise) from the touchpoint list.
 pub fn rank(intent: &str, files: &[FileRec], top_k: usize) -> Vec<(String, f64)> {
-    let q = tokenize(intent);
-    if q.is_empty() {
+    let raw = tokenize(intent);
+    if raw.is_empty() {
         return Vec::new();
     }
+    let stripped = strip_stopwords(raw.clone());
+    let q = if stripped.is_empty() { raw } else { stripped };
     // Build ephemeral corpus: production code only (test/generated
     // surfaces carry kind == "test" and are excluded by construction).
     let docs: Vec<(&FileRec, Vec<String>)> = files
@@ -145,6 +211,12 @@ pub fn rank(intent: &str, files: &[FileRec], top_k: usize) -> Vec<(String, f64)>
             .then_with(|| a.0.cmp(&b.0))
     });
     scored.truncate(top_k);
+    // Relative floor: the tail below 35% of the leader is lexical noise,
+    // not a likely touchpoint. Single-hit queries are unaffected.
+    if let Some(top) = scored.first().map(|(_, s)| *s) {
+        let floor = top * 0.35;
+        scored.retain(|(_, s)| *s >= floor);
+    }
     scored
 }
 
@@ -263,6 +335,36 @@ mod tests {
         assert!(tokenize("SessionConfig").contains(&"config".to_string()));
         assert!(tokenize("auth_session").contains(&"auth".to_string()));
         assert!(tokenize("auth/session.ts").contains(&"auth".to_string()));
+    }
+    #[test]
+    fn stemming_matches_inflections() {
+        // #13: "resizing" must match resize*, "owned" must match owner.
+        assert_eq!(tokenize("resizing"), tokenize("resize"));
+        assert!(tokenize("owned").iter().any(|t| tokenize("owner").contains(t)));
+    }
+
+    #[test]
+    fn stopwords_dont_seed_noise() {
+        // #13: generic task verbs must not seed touchpoints.
+        let files = vec![
+            rec("AddUser.tsx", "js", &["AddUser"]),
+            rec("auth/session.ts", "js", &["createSession"]),
+        ];
+        let r = rank("add session handling", &files, 5);
+        assert!(!r.iter().any(|(p, _)| p == "AddUser.tsx"), "{r:?}");
+        assert_eq!(r[0].0, "auth/session.ts");
+    }
+
+    #[test]
+    fn weak_tail_below_floor_dropped() {
+        // #13: a far-weaker second hit is noise, not a touchpoint.
+        let files = vec![
+            rec("auth/session.ts", "js", &["createSession", "sessionConfig"]),
+            rec("util/string.ts", "js", &["other"]),
+        ];
+        let r = rank("session", &files, 5);
+        assert_eq!(r.len(), 1);
+        assert_eq!(r[0].0, "auth/session.ts");
     }
 
     #[test]

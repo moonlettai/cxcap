@@ -360,10 +360,19 @@ pub fn analyze_ts(text: &str, lang: TsLang) -> TsMetrics {
                     // keyword noise is gone structurally.
                 }
                 "import_statement" => {
+                    // Statement-level `import type` is type-only. So is an
+                    // import whose every named specifier is `type`-marked
+                    // (`import { type A }`), which erases fully at runtime.
+                    // A bare default (`import D`) or any unmarked specifier
+                    // keeps a runtime edge; `verbatimModuleSyntax` (which
+                    // preserves the side-effect import) stays out of scope —
+                    // documented on the edge, not modeled here.
                     let mut cursor = n.walk();
                     let kids: Vec<_> = n.children(&mut cursor).collect();
                     let mut source = None;
                     let mut is_type = false;
+                    let mut spec_total = 0usize;
+                    let mut spec_typed = 0usize;
                     for k in &kids {
                         if k.kind() == "string" && source.is_none() {
                             source = string_value(*k, bytes);
@@ -371,9 +380,29 @@ pub fn analyze_ts(text: &str, lang: TsLang) -> TsMetrics {
                         if k.kind() == "type" {
                             is_type = true;
                         }
+                        if matches!(k.kind(), "import_clause" | "named_imports") {
+                            let mut stack = vec![*k];
+                            while let Some(cur) = stack.pop() {
+                                let mut cc = cur.walk();
+                                for ch in cur.children(&mut cc) {
+                                    if ch.kind() == "import_specifier" {
+                                        spec_total += 1;
+                                        let mut sc = ch.walk();
+                                        if ch.children(&mut sc).any(|g| g.kind() == "type") {
+                                            spec_typed += 1;
+                                        }
+                                    } else {
+                                        stack.push(ch);
+                                    }
+                                }
+                            }
+                        }
                     }
+                    // A lone `import './x'` (no clause, no specifiers) is a
+                    // side-effect runtime edge, not a type-only one.
+                    let all_typed = spec_total > 0 && spec_total == spec_typed;
                     if let Some(s) = source {
-                        if is_type {
+                        if is_type || all_typed {
                             m.type_only_imports.push(s);
                         } else {
                             m.imports.push(s);
@@ -382,8 +411,10 @@ pub fn analyze_ts(text: &str, lang: TsLang) -> TsMetrics {
                 }
                 "export_statement" => {
                     // `export … from 'x'` (re-export edge) and
-                    // `export type … from 'x'` (type-only). Plain exports
-                    // declare nothing outward.
+                    // `export type … from 'x'` (type-only). Like imports, an
+                    // export whose every specifier is `type`-marked erases
+                    // fully; a bare value specifier keeps the runtime edge.
+                    // Plain exports declare nothing outward.
                     let mut cursor = n.walk();
                     let kids: Vec<_> = n.children(&mut cursor).collect();
                     let has_from = kids
@@ -391,6 +422,8 @@ pub fn analyze_ts(text: &str, lang: TsLang) -> TsMetrics {
                         .any(|k| !k.is_named() && k.kind() == "from");
                     let mut is_type = false;
                     let mut source = None;
+                    let mut spec_total = 0usize;
+                    let mut spec_typed = 0usize;
                     for k in &kids {
                         if k.kind() == "type" {
                             is_type = true;
@@ -398,10 +431,28 @@ pub fn analyze_ts(text: &str, lang: TsLang) -> TsMetrics {
                         if k.kind() == "string" && source.is_none() {
                             source = string_value(*k, bytes);
                         }
+                        if matches!(k.kind(), "export_clause") {
+                            let mut stack = vec![*k];
+                            while let Some(cur) = stack.pop() {
+                                let mut cc = cur.walk();
+                                for ch in cur.children(&mut cc) {
+                                    if ch.kind() == "export_specifier" {
+                                        spec_total += 1;
+                                        let mut sc = ch.walk();
+                                        if ch.children(&mut sc).any(|g| g.kind() == "type") {
+                                            spec_typed += 1;
+                                        }
+                                    } else {
+                                        stack.push(ch);
+                                    }
+                                }
+                            }
+                        }
                     }
+                    let all_typed = spec_total > 0 && spec_total == spec_typed;
                     if has_from {
                         if let Some(s) = source {
-                            if is_type {
+                            if is_type || all_typed {
                                 m.type_only_imports.push(s);
                             } else {
                                 m.imports.push(s);
