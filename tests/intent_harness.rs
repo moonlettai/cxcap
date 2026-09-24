@@ -374,3 +374,23 @@ fn intent_tangles_describe_the_context_set_only() {
     let ctx: Vec<&str> = it["context_lines"].as_array().unwrap().iter().filter_map(|v| v.as_str()).collect();
     assert!(ctx.iter().any(|l| l.starts_with("1 component, 0 cross-boundary edges, 0 cycles")), "{ctx:?}");
 }
+
+#[test]
+fn answer_comes_before_the_repo_map() {
+    // --intent / --focus answer the question asked: print it under VERDICT,
+    // before hotspots and warnings.
+    let t = fixture_repo();
+    let out = std::process::Command::new(common::bin())
+        .arg("audit")
+        .arg(&t.path)
+        .args(["--intent", "session config", "--focus", "auth/session.ts"])
+        .output()
+        .expect("run cxcap binary");
+    let text = String::from_utf8_lossy(&out.stdout).into_owned();
+    let pos = |needle: &str| text.find(needle).unwrap_or_else(|| panic!("missing {needle}: {text}"));
+    let verdict = pos("VERDICT:");
+    let focus = pos("FOCUS 'auth/session.ts'");
+    let intent = pos("CHANGE EXPOSURE");
+    let map = pos("HOTSPOTS");
+    assert!(verdict < focus && focus < intent && intent < map, "{text}");
+}
