@@ -451,7 +451,11 @@ pub fn render_text(rep: &Report, top_n: usize) -> String {
             "unscored (not analyzed): {}",
             rep.unscored_top
                 .iter()
-                .map(|(e, n)| format!("{n}x {e}"))
+                .map(|(e, n)| {
+                    // JSON keeps the "(none)" key; text says what it means.
+                    let e = if e == "(none)" { "(no extension)" } else { e.as_str() };
+                    format!("{n}x {e}")
+                })
                 .collect::<Vec<_>>()
                 .join(", ")
         ));
@@ -510,7 +514,7 @@ pub fn render_text(rep: &Report, top_n: usize) -> String {
             "CLONES (cross-file copy-paste, fix in all places or extract): {}",
             rep.clones
                 .iter()
-                .map(|(a, b, n)| format!("{a} \u{2194} {b} ({n} blocks)"))
+                .map(|(a, b, n)| format!("{a} \u{2194} {b} ({})", n1(*n, "block")))
                 .collect::<Vec<_>>()
                 .join(", ")
         ));
