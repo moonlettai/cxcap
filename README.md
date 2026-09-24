@@ -297,7 +297,7 @@ A small-looking request can expose a wide reasoning surface. The receipt above i
 
 ### A real proof
 
-On a public Django checkout, the intent `add session expiry to authenticated requests` surfaced 22 production files, 3 verification files, 14 cross-boundary edges, 4 cycles, and dynamic-analysis uncertainty across 10 areas. Django is not “bad”; the result shows that a mature codebase can make a supposedly local change expensive to reason about.
+On a public Django checkout, the intent `add session expiry to authenticated requests` (django@a013c82, cxcap 1.0.4) produced a bounded context set (at most 25 files) of 22 production and 3 verification files, with 16 cross-boundary edges, 4 import cycles (1 load-time, 3 through function-level imports), and dynamic-analysis uncertainty in 10 places across 8 files. Django is not “bad”; the result shows that a mature codebase can make a supposedly local change expensive to reason about.
 
 ## Read the reasoning
 
