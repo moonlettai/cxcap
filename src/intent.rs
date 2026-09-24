@@ -26,6 +26,29 @@ pub struct OpacityNote {
     pub detail: String,
 }
 
+/// An import cycle touching the intent context set, named and split the
+/// same way `--focus` and WARNINGS split it: eager (load-time) vs lazy
+/// (function-level) with its size. Carried explicitly because the raw
+/// `cycles` tuple loses the distinction downstream.
+#[derive(Debug, Clone, Serialize)]
+pub struct IntentCycle {
+    pub members: Vec<String>,
+    pub eager: bool,
+}
+
+impl IntentCycle {
+    /// `15-module cycle (a ↔ b ↔ c…)` / `140-module lazy tangle (…)`.
+    pub fn summary(&self) -> String {
+        let shown: String = self.members.iter().take(3).cloned().collect::<Vec<_>>().join(" ↔ ");
+        let more = if self.members.len() > 3 { "…" } else { "" };
+        if self.eager {
+            format!("{}-module cycle ({}{})", self.members.len(), shown, more)
+        } else {
+            format!("{}-module lazy tangle ({}{})", self.members.len(), shown, more)
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct IntentRep {
     pub query: String,
@@ -36,6 +59,10 @@ pub struct IntentRep {
     pub context_lines: Vec<String>,
     pub component_tangles: Vec<String>,
     pub uncertainty: Vec<OpacityNote>,
+    /// Import cycles touching the context set (eager/lazy + sizes).
+    pub intent_cycles: Vec<IntentCycle>,
+    /// Distinct files carrying uncertainty flags (full list is `uncertainty`).
+    pub n_uncertain_files: usize,
     pub assessment: String,
 }
 
@@ -139,7 +166,21 @@ pub fn build_intent(
             });
         }
     }
-    let assessment = assess_intent(q, &seeds, &ctx, &tangles, uncertainty.len());
+    // Cycles touching the context set, eager/lazy preserved (the context
+    // count alone loses the distinction the reader needs). Small first:
+    // they fit in a human head; large tangles are context, not action.
+    let mut intent_cycles: Vec<IntentCycle> = cycles
+        .iter()
+        .filter(|(c, _)| c.iter().any(|f| in_set.contains(f.as_str())))
+        .map(|(c, eager)| IntentCycle { members: c.clone(), eager: *eager })
+        .collect();
+    intent_cycles.sort_by_key(|c| (!c.eager, c.members.len()));
+    let mut seen_files = std::collections::HashSet::new();
+    for u in &uncertainty {
+        seen_files.insert(u.path.clone());
+    }
+    let n_uncertain_files = seen_files.len();
+    let assessment = assess_intent(q, &seeds, &ctx, &tangles, &intent_cycles, n_uncertain_files, uncertainty.len());
     Some(IntentRep {
         query: q.to_string(),
         seeds,
@@ -148,6 +189,8 @@ pub fn build_intent(
         context_lines: ctx.lines,
         component_tangles: tangles,
         uncertainty,
+        intent_cycles,
+        n_uncertain_files,
         assessment,
     })
 }
@@ -157,7 +200,9 @@ fn assess_intent(
     seeds: &[IntentSeed],
     ctx: &crate::context::ContextSurface,
     tangles: &[String],
-    n_uncertain: usize,
+    intent_cycles: &[IntentCycle],
+    n_uncertain_files: usize,
+    n_flags: usize,
 ) -> String {
     if seeds.is_empty() {
         return format!(
@@ -180,13 +225,23 @@ fn assess_intent(
     } else {
         s.push_str(&format!(" Cross-component tangle: {}.", tangles.join("; ")));
     }
-    if n_uncertain > 0 {
+    // Named intent cycles: eager (load-time) vs lazy, with sizes — the
+    // assessment count alone never names them.
+    if !intent_cycles.is_empty() {
+        let named: Vec<String> = intent_cycles.iter().take(4).map(|c| c.summary()).collect();
+        s.push_str(&format!(" Intent cycles: {}.", named.join("; ")));
+        if intent_cycles.len() > 4 {
+            s.push_str(&format!(" ({} more in JSON)", intent_cycles.len() - 4));
+        }
+    }
+    if n_flags > 0 {
         s.push_str(&format!(
             " {} {} with dynamic behavior \u{2014} static blast radius may be incomplete.",
-            n_uncertain,
-            if n_uncertain == 1 { "area" } else { "areas" }
+            n_uncertain_files,
+            if n_uncertain_files == 1 { "area" } else { "areas" }
         ));
     }
     s.push_str(" Keep the change narrow; verify direct dependents before editing.");
     s
 }
+

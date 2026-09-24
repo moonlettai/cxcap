@@ -555,14 +555,38 @@ pub fn render_text(rep: &Report, top_n: usize) -> String {
         if !it.component_tangles.is_empty() {
             l.push(format!("  COMPONENT TANGLES: {}", it.component_tangles.join("; ")));
         }
+        if !it.intent_cycles.is_empty() {
+            let named: Vec<String> = it.intent_cycles.iter().take(4).map(|c| c.summary()).collect();
+            let more = if it.intent_cycles.len() > 4 {
+                format!(" ({} more in JSON)", it.intent_cycles.len() - 4)
+            } else {
+                String::new()
+            };
+            l.push(format!("  INTENT CYCLES: {}{}", named.join("; "), more));
+        }
         if !it.uncertainty.is_empty() {
+            // "N shown of M": text lists 5, JSON carries the full list.
+            let shown = it.uncertainty.len().min(5);
+            let mut seen: Vec<String> = Vec::new();
+            for u in &it.uncertainty {
+                if !seen.contains(&u.path) {
+                    seen.push(u.path.clone());
+                }
+            }
             let us: Vec<String> = it
                 .uncertainty
                 .iter()
                 .take(5)
                 .map(|u| format!("{} [{}]: {}", u.path, u.kind, u.detail))
                 .collect();
-            l.push(format!("  UNCERTAINTY: {}", us.join("; ")));
+            l.push(format!(
+                "  UNCERTAINTY ({} shown of {} flags in {} {}): {}",
+                shown,
+                it.uncertainty.len(),
+                seen.len(),
+                if seen.len() == 1 { "file" } else { "files" },
+                us.join("; ")
+            ));
         }
     }
     l.push(String::new());

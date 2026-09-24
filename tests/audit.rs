@@ -386,6 +386,39 @@ fn typeonly_no_fanin() {
     assert!(!ws.iter().any(|w| w["where"].as_str().unwrap().ends_with("hub_ts.ts")));
 }
 
+// 11b-ii. Inline all-type specifiers erase fully: `import { type A }`
+// draws no runtime edge (and no cycle), like `import type`.
+// A mixed import (`type A` + value `B`) keeps its runtime edge.
+#[test]
+fn ts_inline_typeonly_no_edge() {
+    let t = TestDir::new();
+    t.write("tio/hub.ts", "export const V = 1;\n");
+    for i in 0..3 {
+        t.write(
+            &format!("tio/only{i}.ts"),
+            "import { type V } from './hub';\nexport function f(v: V): V { return v; }\n",
+        );
+    }
+    t.write("tio/hub2.ts", "export const V = 1;\nexport const W = 2;\n");
+    t.write(
+        "tio/mixed.ts",
+        "import { type V, W } from './hub2';\nexport const w = W;\n",
+    );
+    t.write(
+        "tio/plain.ts",
+        "import { V } from './hub';\nexport const v = V;\n",
+    );
+    let rep = audit_json(&t.sub("tio"), &["--top", "40"]);
+    let h = hotspots(&rep);
+    assert_eq!(get(&h, "hub.ts")["fan_in"], 1, "{h:?}");
+    assert_eq!(get(&h, "hub2.ts")["fan_in"], 1, "{h:?}");
+    let ws = rep["warnings"].as_array().unwrap();
+    assert!(!ws.iter().any(|w| {
+        let wh = w["where"].as_str().unwrap();
+        wh.contains("hub.ts") && w["msg"].as_str().unwrap().contains("cycle")
+    }), "{ws:?}");
+}
+
 // 11c. Type-only imports count toward neither fan-out split: upstream
 // annotation-only references cannot break the importer at runtime.
 #[test]

@@ -297,6 +297,56 @@ fn intent_cli_uncertainty_reread() {
         "expected dynamic-import flag, got {unc:?}"
     );
 }
+#[test]
+fn intent_cycles_named_eager_vs_lazy() {
+    // #12: cycles touching the context set are named with eager/lazy + sizes.
+    let t = Tmp::new();
+    t.write("pkga/x.ts", "import { y } from '../pkgb/y';\nexport function xylophone() { return y; }\n");
+    t.write("pkgb/y.ts", "import { xylophone } from '../pkga/x';\nexport const y = xylophone;\n");
+    let rep = audit_json(&t.path, &["--intent", "xylophone"]);
+    let it = rep.get("intent").expect("intent block");
+    let cyc = it.get("intent_cycles").and_then(|c| c.as_array()).cloned().unwrap_or_default();
+    assert_eq!(cyc.len(), 1, "{cyc:?}");
+    assert_eq!(cyc[0].get("eager").and_then(|e| e.as_bool()), Some(true));
+    assert_eq!(cyc[0].get("members").and_then(|m| m.as_array()).map(|a| a.len()), Some(2));
+    let assess = it.get("assessment").and_then(|a| a.as_str()).unwrap_or("");
+    assert!(assess.contains("2-module cycle"), "{assess}");
+    let out = std::process::Command::new(common::bin())
+        .arg("audit")
+        .arg(&t.path)
+        .arg("--intent")
+        .arg("xylophone")
+        .output()
+        .expect("run cxcap binary");
+    let text = String::from_utf8_lossy(&out.stdout).into_owned();
+    assert!(text.contains("INTENT CYCLES: 2-module cycle"), "{text}");
+}
+
+#[test]
+fn uncertainty_shows_n_of_m() {
+    // #12: text lists 5, says "N shown of M flags in K files".
+    let t = Tmp::new();
+    t.write("pkga/x.ts", "export function xylophone() { return 1; }\n");
+    for i in 0..7 {
+        t.write(
+            &format!("pkga/l{i}.ts"),
+            &format!("export async function xylophoneLoad{i}(n: string) {{ return await import(n); }}\n"),
+        );
+    }
+    let rep = audit_json(&t.path, &["--intent", "xylophone"]);
+    let it = rep.get("intent").expect("intent block");
+    assert_eq!(it.get("n_uncertain_files").and_then(|n| n.as_u64()), Some(7));
+    assert_eq!(it.get("uncertainty").and_then(|u| u.as_array()).map(|a| a.len()), Some(7));
+    let out = std::process::Command::new(common::bin())
+        .arg("audit")
+        .arg(&t.path)
+        .arg("--intent")
+        .arg("xylophone")
+        .output()
+        .expect("run cxcap binary");
+    let text = String::from_utf8_lossy(&out.stdout).into_owned();
+    assert!(text.contains("UNCERTAINTY (5 shown of 7 flags in 7 files)"), "{text}");
+}
 
 #[test]
 fn no_intent_flag_leaves_report_untouched() {
