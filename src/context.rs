@@ -76,7 +76,12 @@ pub fn summarize(
     let mut lines = vec![
         format!("{prod} production files (~{} source tokens est.)", prod_loc * TOKENS_PER_LOC),
         format!("{test} verification files (~{} tokens est.)", test_loc * TOKENS_PER_LOC),
-        format!("{} components, {cross} cross-boundary edges, {cyc} cycles", comps.len()),
+        format!(
+            "{}, {}, {}",
+            crate::fmt::n1(comps.len(), "component"),
+            crate::fmt::n1(cross, "cross-boundary edge"),
+            crate::fmt::n1(cyc, "cycle")
+        ),
     ];
     if let Some(pct) = top4_share_pct {
         lines.push(format!("top 4 files hold {pct}% of ranked complexity"));

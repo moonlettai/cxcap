@@ -68,7 +68,19 @@ pub fn build_intent(
         .collect();
     let cyc: Vec<Vec<String>> = cycles.iter().map(|(c, _)| c.clone()).collect();
     let ctx = crate::context::summarize(&expanded, &loc, &edges2, &cyc);
-    let tangles: Vec<String> = crate::component::summarize(&expanded, &edges2, &cyc)
+    // Tangles describe the context set, like the counts beside them: only
+    // edges and cycle members inside the set may make a component tangled.
+    let in_set: std::collections::HashSet<&str> = expanded.iter().map(|p| p.as_str()).collect();
+    let set_edges: Vec<(String, String)> = edges2
+        .iter()
+        .filter(|(a, b)| in_set.contains(a.as_str()) && in_set.contains(b.as_str()))
+        .cloned()
+        .collect();
+    let set_cycles: Vec<Vec<String>> = cyc
+        .iter()
+        .map(|c| c.iter().filter(|f| in_set.contains(f.as_str())).cloned().collect())
+        .collect();
+    let tangles: Vec<String> = crate::component::summarize(&expanded, &set_edges, &set_cycles)
         .into_iter()
         .filter(|c| c.tangle)
         .map(|c| {

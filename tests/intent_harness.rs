@@ -326,3 +326,21 @@ fn real_analyzer_names_untruncated() {
         lexical::rank("helper7", &files, 3).into_iter().map(|(p, _)| p).collect();
     assert_eq!(ranked[0], "util/many.ts");
 }
+
+#[test]
+fn intent_tangles_describe_the_context_set_only() {
+    // pkga <-> pkgb is tangled repo-wide, but the intent only reaches one
+    // standalone pkga file: no tangle, and singular counts.
+    let t = Tmp::new();
+    t.write("pkga/xylophone.ts", "export function playXylophone() { return 1; }\n");
+    t.write("pkga/x.ts", "import { y } from '../pkgb/y';\nexport const x = y;\n");
+    t.write("pkga/z.ts", "export const z = 2;\n");
+    t.write("pkgb/y.ts", "import { z } from '../pkga/z';\nexport const y = z;\n");
+    let rep = audit_json(&t.path, &["--intent", "xylophone"]);
+    let it = &rep["intent"];
+    let expanded: Vec<&str> = it["expanded"].as_array().unwrap().iter().filter_map(|v| v.as_str()).collect();
+    assert_eq!(expanded, vec!["pkga/xylophone.ts"]);
+    assert!(it["component_tangles"].as_array().unwrap().is_empty(), "{}", it["component_tangles"]);
+    let ctx: Vec<&str> = it["context_lines"].as_array().unwrap().iter().filter_map(|v| v.as_str()).collect();
+    assert!(ctx.iter().any(|l| l.starts_with("1 component, 0 cross-boundary edges, 0 cycles")), "{ctx:?}");
+}
