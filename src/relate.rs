@@ -69,6 +69,10 @@ pub fn attribute_coupling(
             /// Pre-resolved Rust target file (resolution needs the
             /// importer's own module, so it happens up front).
             rs: Option<String>,
+            /// `from pkg import name` probe for a submodule: exact file
+            /// match only, never the stem/tail fallbacks (a function name
+            /// must not become a phantom edge to a same-named file).
+            strict: bool,
         }
         let mut ones: Vec<One> = Vec::new();
         match imps {
@@ -81,7 +85,26 @@ pub fn attribute_coupling(
                         deferred: i.deferred,
                         js: None,
                         rs: None,
+                        strict: false,
                     });
+                    // `from pkg import crud` also loads pkg/crud.py when
+                    // `crud` is a submodule.
+                    for name in &i.names {
+                        let module = if i.module.is_empty() {
+                            name.clone()
+                        } else {
+                            format!("{}.{}", i.module, name)
+                        };
+                        ones.push(One {
+                            module,
+                            level: i.level,
+                            type_only: i.type_only,
+                            deferred: i.deferred,
+                            js: None,
+                            rs: None,
+                            strict: true,
+                        });
+                    }
                 }
             }
             Imps::Js(v) => {
@@ -98,6 +121,7 @@ pub fn attribute_coupling(
                         deferred: false,
                         js: Some(s.clone()),
                         rs: None,
+                        strict: false,
                     });
                 }
             }
@@ -151,6 +175,7 @@ pub fn attribute_coupling(
                             deferred: false,
                             js: None,
                             rs: Some(t),
+                            strict: false,
                         });
                     }
                 }
@@ -272,7 +297,7 @@ pub fn attribute_coupling(
                 } else {
                     full_match(&idx, &one.module.split('.').map(|s| s.to_string()).collect::<Vec<_>>())
                 };
-                if c.is_empty() {
+                if c.is_empty() && !one.strict {
                     // Bare top-level import (`import pkg` from inside pkg):
                     // resolve the package root, else the same-named module —
                     // never an unrelated same-stem file elsewhere in the
