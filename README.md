@@ -10,6 +10,10 @@ CXCAP is a fast, local, read-only CLI for one question that is easy to ask too l
 
 > **What complexity am I about to interact with if I make this change?**
 
+![CXCAP on Excalidraw: the file it calls the cheapest place to change is imported by 11 files and reaches 323 more](docs/assets/cxcap-demo.gif)
+
+*Real run on Excalidraw with cxcap 1.0.4. More examples on the [website](https://moonlettai.github.io/cxcap/).*
+
 It analyzes code structure, runtime-static dependencies, coupling, cycles, hotspots, transitive exposure, duplication, and context surface so you can scope a change before adding more complexity to the system.
 
 CXCAP does **not** decide what to build, grade code quality, or predict engineering effort. It gives engineers and AI coding agents concrete evidence to plan against.
@@ -309,6 +313,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the fastest way to report a falsifiab
 
 ## Help and issues
 
+- Website: https://moonlettai.github.io/cxcap/
 - CLI help: `cxcap --help` and `cxcap audit --help`
 - Issues: https://github.com/moonlettai/cxcap/issues
 - Releases: https://github.com/moonlettai/cxcap/releases
