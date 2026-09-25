@@ -68,7 +68,7 @@ CXCAP is a CLI. Point it at a repository and it parses Python, JavaScript/TypeSc
 
 It doesn't grade code, estimate effort or call a model. No index, no daemon, nothing uploaded. An AI coding agent can run it the same way an engineer does (the installer adds an agent skill for that).
 
-A concrete run: on a public Django checkout I gave it the intent *"add session expiry to authenticated requests."* CXCAP's bounded context set (it considers at most 25 files) held 22 production files across 2 components, with 14 cross-boundary edges, 4 import cycles (1 load-time, 3 through function-level imports) and dynamic-analysis uncertainty in 10 places. It took under a second.
+A concrete run: on a public Django checkout I gave it the intent *"add session expiry to authenticated requests."* CXCAP's bounded context set (it considers at most 25 files) held 22 production files across 2 components, with 16 cross-boundary edges, 4 import cycles (1 load-time, 3 through function-level imports) and dynamic-analysis uncertainty in 10 places (8 files). It took under a second.
 
 That doesn't mean Django is bad. It's a mature, well-engineered framework. It means a request that *sounds* local sits inside a wider reasoning surface, and an AI coding agent should see that before it edits, not after.
 
@@ -117,4 +117,4 @@ Then tell me where it's wrong: a false positive, a missed dependency, a confusin
 - Anthropic, Claude Code costs: https://code.claude.com/docs/en/costs
 - GitHub Copilot billing: https://docs.github.com/en/copilot/concepts/billing-and-usage/individuals/billing
 - OpenAI Codex pricing: https://developers.openai.com/codex/pricing
-- CXCAP Django run: django@a013c82, `cxcap audit . --intent "add session expiry to authenticated requests"` (cxcap 1.0.2)
+- CXCAP Django run: django@a013c82, `cxcap audit . --intent "add session expiry to authenticated requests"` (cxcap 1.0.4)

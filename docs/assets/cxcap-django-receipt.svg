@@ -9,19 +9,19 @@
   <rect x="120" y="305" width="300" height="190" rx="18" fill="#231c35" stroke="#9c6cff" stroke-width="2"/>
   <text x="150" y="350" fill="#bda4ff" font-family="Inter,Arial,sans-serif" font-size="20">VERDICT</text>
   <text x="150" y="430" fill="#f0eaff" font-family="Inter,Arial,sans-serif" font-size="58" font-weight="800">SEVERE</text>
-  <text x="150" y="466" fill="#c7b8ef" font-family="Inter,Arial,sans-serif" font-size="18">230 HIGH warnings</text>
+  <text x="150" y="466" fill="#c7b8ef" font-family="Inter,Arial,sans-serif" font-size="18">245 HIGH warnings</text>
   <g font-family="Inter,Arial,sans-serif">
     <text x="500" y="345" fill="#91a2c6" font-size="20">REASONING SURFACE</text>
     <text x="500" y="405" fill="#f4f7ff" font-size="48" font-weight="700">22 + 3</text>
     <text x="500" y="442" fill="#91a2c6" font-size="19">production + verification files</text>
     <text x="500" y="525" fill="#91a2c6" font-size="20">CROSS-BOUNDARY EDGES</text>
-    <text x="500" y="585" fill="#f4f7ff" font-size="48" font-weight="700">14</text>
+    <text x="500" y="585" fill="#f4f7ff" font-size="48" font-weight="700">16</text>
     <text x="500" y="622" fill="#91a2c6" font-size="19">before implementation</text>
     <text x="850" y="345" fill="#91a2c6" font-size="20">CYCLES IN SURFACE</text>
     <text x="850" y="405" fill="#f4f7ff" font-size="48" font-weight="700">4</text>
     <text x="850" y="442" fill="#91a2c6" font-size="19">structural relationships</text>
     <text x="850" y="525" fill="#91a2c6" font-size="20">EST. SOURCE CONTEXT</text>
-    <text x="850" y="585" fill="#f4f7ff" font-size="48" font-weight="700">~32.7k</text>
+    <text x="850" y="585" fill="#f4f7ff" font-size="48" font-weight="700">~28.5k</text>
     <text x="850" y="622" fill="#91a2c6" font-size="19">tokens across likely touchpoints</text>
   </g>
   <line x1="120" y1="690" x2="1480" y2="690" stroke="#263557" stroke-width="2"/>
