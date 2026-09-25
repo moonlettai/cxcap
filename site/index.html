@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CXCAP: see what a code change will touch before anyone edits</title>
+  <meta name="description" content="CXCAP is a free, local CLI that maps the files, dependents and import cycles behind a code change, for developers and their AI coding agents.">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#16181b">
+  <link rel="canonical" href="https://moonlettai.github.io/cxcap/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="CXCAP: see what a change will touch before anyone edits">
+  <meta property="og:description" content="A free, local CLI that maps the files, dependents and import cycles behind a code change. For developers and their coding agents.">
+  <meta property="og:url" content="https://moonlettai.github.io/cxcap/">
+  <meta property="og:image" content="https://moonlettai.github.io/cxcap/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="styles.css">
+  <script>
+    (function () {
+      try {
+        var q = new URLSearchParams(location.search).get("theme");
+        var t = q || localStorage.getItem("cxcap-theme");
+        if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="top">
+    <div class="wrap top__row">
+      <a class="brand" href="#top" aria-label="CXCAP home">
+        <svg class="brand__mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="5" y="5" width="22" height="22" rx="2" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="5 3.2"/><circle cx="16" cy="16" r="3.5" fill="var(--flag)"/></svg>
+        <span>cxcap</span>
+      </a>
+      <nav class="nav" aria-label="Sections">
+        <a href="#examples">Examples</a>
+        <a href="#how">How it works</a>
+        <a href="#agents">For agents</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="top__actions">
+        <button class="theme" type="button" aria-label="Switch to light mode" data-theme-toggle>
+          <svg class="theme__sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3M4.6 4.6l2.1 2.1M17.3 17.3l2.1 2.1M4.6 19.4l2.1-2.1M17.3 6.7l2.1-2.1"/></svg>
+          <svg class="theme__moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7Z"/></svg>
+        </button>
+        <a class="btn btn--ghost btn--small" href="https://github.com/moonlettai/cxcap">
+          <svg viewBox="0 0 16 16" aria-hidden="true" class="gh"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+          <span>GitHub</span><span class="stars" data-stars hidden></span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="wrap hero__grid">
+        <div class="hero__copy">
+          <h1 id="hero-title">See what a change will touch before anyone edits.</h1>
+          <p class="lede">CXCAP maps the files, dependents and import cycles behind a code change. It runs on your machine in about a second, for you and for your coding agent.</p>
+
+          <div class="install" data-copy-block>
+            <p class="install__label" id="install-label">Install on macOS or Linux</p>
+            <div class="install__box">
+              <code aria-labelledby="install-label" data-copy-source data-copy-text="curl -fsSLO https://github.com/moonlettai/cxcap/releases/latest/download/install.sh &amp;&amp; sh install.sh">curl -fsSLO https://github.com/<wbr>moonlettai/<wbr>cxcap/<wbr>releases/<wbr>latest/<wbr>download/<wbr>install.sh
+sh install.sh</code>
+              <button class="copy" type="button" data-copy>Copy</button>
+            </div>
+          </div>
+          <div class="hero__ctas">
+            <a class="btn btn--primary" href="#how">See how it works</a>
+            <a class="btn btn--ghost" href="https://github.com/moonlettai/cxcap">View the code on GitHub</a>
+          </div>
+          <p class="fineprint">Free and open source (MIT). Works on Python, JavaScript, TypeScript and Rust repos. Nothing leaves your machine.</p>
+        </div>
+
+        <figure class="locate" aria-labelledby="locate-caption">
+          <div class="locate__head">
+            <code class="locate__cmd"><span class="prompt">$</span> cxcap audit . --focus packages/element/src/textMeasurements.ts</code>
+          </div>
+          <div class="locate__stage">
+            <svg class="locate__map" viewBox="-300 -250 600 500" role="img" aria-labelledby="map-title map-desc" data-map>
+              <title id="map-title">Change surface of textMeasurements.ts in Excalidraw</title>
+              <desc id="map-desc">The file you want to change sits in the middle. Eleven files import it directly. Through them, the change can reach 323 more files.</desc>
+            </svg>
+            <div class="locate__readout" aria-hidden="true">
+              <p class="readout__verdict">“Cheapest place to change”</p>
+              <p class="readout__line"><span class="dot dot--direct"></span><strong data-count-direct>11</strong> files import it</p>
+              <p class="readout__line"><span class="dot dot--reach"></span><strong data-count-reach>323</strong> more files reached</p>
+            </div>
+          </div>
+          <figcaption id="locate-caption">
+            <span>Real run on Excalidraw with cxcap 1.0.4. The file looks cheap to edit, and it is. It's also imported by 11 files and reaches 323 more.</span>
+            <button class="linkbtn" type="button" data-replay>Replay</button>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Problem -->
+    <section class="band" aria-labelledby="why-title">
+      <div class="wrap">
+        <h2 id="why-title">Tests say a change works. They don't say what it's tangled with.</h2>
+        <ol class="chain">
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="8" width="32" height="32" rx="3"/><path d="M16 25l6 6 11-13"/></svg>
+            <h3>Your agent finishes the task</h3>
+            <p>Tests pass. The diff looks reasonable. Nothing fails in review.</p>
+          </li>
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="12" cy="24" r="5"/><circle cx="36" cy="12" r="5"/><circle cx="36" cy="36" r="5"/><path d="M17 22l14-8M17 26l14 8M36 17v14"/></svg>
+            <h3>The structure grows a little</h3>
+            <p>One more import, one more copied path, sometimes one more cycle.</p>
+          </li>
+          <li>
+            <svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 38h32M12 38V26M20 38V20M28 38V14M36 38V8"/></svg>
+            <h3>The next change costs more</h3>
+            <p>Every later session, human or agent, has more to read before it can edit safely.</p>
+          </li>
+        </ol>
+        <p class="source">This isn't only a feeling. A Carnegie Mellon study of open-source projects (MSR 2026) found AI coding tools brought a short-lived speed boost and a lasting rise in code complexity. <a href="https://arxiv.org/abs/2511.04427">Read the study</a></p>
+      </div>
+    </section>
+
+    <!-- Examples -->
+    <section class="section" id="examples" aria-labelledby="examples-title">
+      <div class="wrap">
+        <h2 id="examples-title">Real runs on real repos</h2>
+        <p class="section__intro">Every number below is copied from CXCAP 1.0.4 output. You can reproduce each one with a single command.</p>
+
+        <div class="tabs" data-tabs>
+          <div class="tabs__list" role="tablist" aria-label="Example repositories">
+            <button role="tab" id="tab-ex" aria-controls="panel-ex" aria-selected="true">Excalidraw <span>TypeScript</span></button>
+            <button role="tab" id="tab-dj" aria-controls="panel-dj" aria-selected="false" tabindex="-1">Django <span>Python</span></button>
+            <button role="tab" id="tab-rq" aria-controls="panel-rq" aria-selected="false" tabindex="-1">requests <span>Python</span></button>
+          </div>
+
+          <div class="panel" role="tabpanel" id="panel-ex" aria-labelledby="tab-ex" tabindex="0">
+            <p class="panel__ask">You want to change a text-measuring helper.</p>
+            <pre class="cmd"><code><span class="prompt">$</span> cxcap audit . --focus packages/element/src/textMeasurements.ts</code></pre>
+            <p class="panel__finding">CXCAP calls it the cheapest place to change. It also shows how far a signature change would travel.</p>
+            <dl class="stats">
+              <div><dt>Files that import it</dt><dd>11</dd></div>
+              <div><dt>More files reached through them</dt><dd>323</dd></div>
+              <div><dt>Time on 1,297 files</dt><dd>0.26 s</dd></div>
+            </dl>
+            <details class="more">
+              <summary>Show the output</summary>
+<pre class="output"><code>FOCUS 'packages/element/src/textMeasurements.ts': 1 file, complexity 34 (0.1% of repo)
+  Focus area is below-average complexity (avg 34.0 vs 40.3). Cheapest place to
+  change — still keep the diff local. Imported by 11 outside files
+  (packages/element/src/index.ts, packages/element/src/textElement.ts,
+  packages/element/src/newElement.ts (+6 more)) — keep interfaces stable or
+  update them in the same diff. Reaches 323 further files transitively
+  (packages/excalidraw/components/App.tsx, packages/excalidraw/index.tsx, …)</code></pre>
+              <p class="more__note">Excalidraw at commit 1118751. The 323 includes test files.</p>
+            </details>
+          </div>
+
+          <div class="panel" role="tabpanel" id="panel-dj" aria-labelledby="tab-dj" tabindex="0" hidden>
+            <p class="panel__ask">You're asked to “add session expiry to authenticated requests” and don't know where that lives yet.</p>
+            <pre class="cmd"><code><span class="prompt">$</span> cxcap audit . --intent "add session expiry to authenticated requests"</code></pre>
+            <p class="panel__finding">A request that sounds local lands in a much wider area. Django isn't messy here. Mature systems are simply big, and your agent should know that before it starts.</p>
+            <dl class="stats">
+              <div><dt>Production files in play</dt><dd>22</dd></div>
+              <div><dt>Edges crossing components</dt><dd>16</dd></div>
+              <div><dt>Import cycles touched</dt><dd>4</dd></div>
+              <div><dt>Blind spots flagged</dt><dd>10</dd></div>
+            </dl>
+            <details class="more">
+              <summary>Show the output</summary>
+<pre class="output"><code>CHANGE EXPOSURE (intent: 'add session expiry to authenticated requests'):
+  LIKELY TOUCHPOINTS: django/contrib/sessions/backends/base.py (8 direct
+  dependents); django/contrib/sessions/backends/file.py; django/contrib/auth/base_user.py …
+  CONTEXT SURFACE (capped at 25 files; more may be in reach): 22 production files;
+  3 verification files; 2 components, 16 cross-boundary edges, 4 cycles
+  INTENT CYCLES: 15-module cycle (django/core/checks/…); 2-module lazy tangle;
+  3-module lazy tangle; 173-module lazy tangle
+  UNCERTAINTY (5 shown of 10 flags in 8 files): getattr() dispatch; runtime
+  import machinery …</code></pre>
+              <p class="more__note">Django at commit a013c82, 0.8 s. The file list is capped at 25 so it stays readable. One of the four cycles loads eagerly; three close only through function-level imports.</p>
+            </details>
+          </div>
+
+          <div class="panel" role="tabpanel" id="panel-rq" aria-labelledby="tab-rq" tabindex="0" hidden>
+            <p class="panel__ask">You want to change how the HTTP adapter retries connection errors.</p>
+            <pre class="cmd"><code><span class="prompt">$</span> cxcap audit . --intent "retry connection errors with backoff in the http adapter"</code></pre>
+            <p class="panel__finding">It finds the right file, and warns that the file sits in a loop of modules that import each other.</p>
+            <dl class="stats">
+              <div><dt>Production files in play</dt><dd>10 <small>of 21</small></dd></div>
+              <div><dt>Edges crossing components</dt><dd>10</dd></div>
+              <div><dt>Modules in the import cycle</dt><dd>7</dd></div>
+              <div><dt>Time</dt><dd>0.03 s</dd></div>
+            </dl>
+            <details class="more">
+              <summary>Show the output</summary>
+<pre class="output"><code>CHANGE EXPOSURE (intent: 'retry connection errors with backoff in the http adapter'):
+  LIKELY TOUCHPOINTS: src/requests/adapters.py (repo hotspot; 3 direct dependents)
+  CONTEXT SURFACE: 10 production files; 2 verification files; 2 components,
+  10 cross-boundary edges, 1 cycle
+  INTENT CYCLES: 7-module cycle (src/requests/__init__.py ↔
+  src/requests/adapters.py ↔ src/requests/api.py …)</code></pre>
+              <p class="more__note">requests at commit 611c616.</p>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How -->
+    <section class="section band" id="how" aria-labelledby="how-title">
+      <div class="wrap">
+        <h2 id="how-title">Three commands, one habit</h2>
+        <p class="section__intro">Run it before you change something, and again after.</p>
+        <ol class="steps">
+          <li>
+            <h3>Describe the change</h3>
+            <p>Plain English is enough. You get the likely files, what depends on them and any cycles in the way.</p>
+            <pre class="cmd"><code><span class="prompt">$</span> cxcap audit . --intent "add rate limits to login"</code></pre>
+          </li>
+          <li>
+            <h3>Check the file before you edit it</h3>
+            <p>See who imports it and how far a change could spread.</p>
+            <pre class="cmd"><code><span class="prompt">$</span> cxcap audit . --focus src/auth/session.py</code></pre>
+          </li>
+          <li>
+            <h3>Check again when you're done</h3>
+            <p>Make sure the change didn't add a cycle or new coupling you didn't mean to.</p>
+            <pre class="cmd"><code><span class="prompt">$</span> cxcap audit . --focus src/auth/session.py</code></pre>
+          </li>
+        </ol>
+        <p class="tip">Add <code>--json</code> to any command when a script or an agent needs to read the result.</p>
+      </div>
+    </section>
+
+    <!-- Agents -->
+    <section class="section" id="agents" aria-labelledby="agents-title">
+      <div class="wrap split">
+        <div>
+          <h2 id="agents-title">Give your coding agent the map too</h2>
+          <p>The installer adds a small skill for coding agents like Claude Code. It tells the agent when to run CXCAP: before planning a change, and before calling it done.</p>
+          <p>Any agent that can run a shell command can use it. There's no model, no API key and no server. The same command always gives the same answer.</p>
+          <a class="btn btn--ghost" href="https://github.com/moonlettai/cxcap/blob/main/skill/cxcap-development/SKILL.md">Read the agent skill</a>
+        </div>
+        <figure class="quote">
+          <blockquote>
+            <p>Use CXCAP as a <strong>pre-change map</strong> and <strong>post-change regression check</strong>.</p>
+            <ul>
+              <li><strong>Know the task, not the files</strong>: <code>cxcap audit . --intent "&lt;task&gt;"</code></li>
+              <li><strong>Know the file or area</strong>: <code>cxcap audit . --focus &lt;path&gt;</code></li>
+              <li><strong>Cycle through the target</strong>: treat the cycle as one coordination surface.</li>
+            </ul>
+          </blockquote>
+          <figcaption>From the skill file the installer adds, <code>cxcap-development/SKILL.md</code></figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Honesty -->
+    <section class="section band" aria-labelledby="honest-title">
+      <div class="wrap split">
+        <div class="selfaudit">
+          <h2 id="honest-title">Built to be argued with</h2>
+          <p>We ran CXCAP on its own source code. It said SEVERE: 15 high warnings, and 22 duplicated blocks of code shared between two of its own parsers. We shipped it that way. A tool tuned until its own code looks clean wouldn't tell you much.</p>
+          <p class="verdict" aria-label="Verdict on its own code: SEVERE"><span>SEVERE</span></p>
+          <p>On 31 real past changes in 7 repos, its top 10 suggestions found about 70% of the files that actually changed. Useful, not magic.</p>
+        </div>
+        <div>
+          <h3 class="limits__title">What it won't do</h3>
+          <ul class="limits">
+            <li><strong>Grade your code.</strong> SEVERE means “change carefully here”, not “this is bad”. Django gets SEVERE too.</li>
+            <li><strong>Estimate effort.</strong> It shows structure, not hours.</li>
+            <li><strong>See runtime tricks.</strong> It reads code, it doesn't run it. It flags the dynamic spots it can't follow.</li>
+            <li><strong>Read every language.</strong> Python, JavaScript, TypeScript and Rust today. Other files are listed as not analyzed.</li>
+            <li><strong>Replace tests or review.</strong> It answers a different question. Use all three.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section cta" id="try" aria-labelledby="try-title">
+      <div class="wrap">
+        <h2 id="try-title">Try it on your next real change</h2>
+        <p class="section__intro">Pick the repo you've built most with AI. Give CXCAP the change you're about to make. If it misses something that matters, we want to hear it.</p>
+        <div class="install install--wide" data-copy-block>
+          <p class="install__label" id="install-label-2">Install on macOS or Linux</p>
+          <div class="install__box">
+            <code aria-labelledby="install-label-2" data-copy-source data-copy-text="curl -fsSLO https://github.com/moonlettai/cxcap/releases/latest/download/install.sh &amp;&amp; sh install.sh">curl -fsSLO https://github.com/<wbr>moonlettai/<wbr>cxcap/<wbr>releases/<wbr>latest/<wbr>download/<wbr>install.sh
+sh install.sh</code>
+            <button class="copy" type="button" data-copy>Copy</button>
+          </div>
+          <p class="install__alt">Have Rust? <code>cargo install cxcap</code> works too.</p>
+        </div>
+        <div class="hero__ctas">
+          <a class="btn btn--primary" href="https://github.com/moonlettai/cxcap/issues/2">Tell us where it was wrong</a>
+          <a class="btn btn--ghost" href="https://github.com/moonlettai/cxcap">Star it on GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section band" id="faq" aria-labelledby="faq-title">
+      <div class="wrap faq">
+        <h2 id="faq-title">Questions</h2>
+        <div class="faq__list">
+          <details>
+            <summary>Does my code leave my machine?</summary>
+            <p>No. CXCAP reads your files and writes nothing to your repo. There's no model and no upload. The only network call is an optional daily check for a new version, which you can turn off with <code>CXCAP_NO_UPDATE_CHECK=1</code>.</p>
+          </details>
+          <details>
+            <summary>Will it lower my AI bill?</summary>
+            <p>We don't claim that. Coding agents are billed by how much they read and do, and tangled code gives them more to read. CXCAP shows you that structure. It doesn't measure savings.</p>
+          </details>
+          <details>
+            <summary>How is it different from a linter?</summary>
+            <p>A linter checks lines inside a file. CXCAP looks at how files connect: who imports what, how far a change can reach, and where modules import each other in a loop.</p>
+          </details>
+          <details>
+            <summary>Why does my repo say SEVERE?</summary>
+            <p>Big, busy code gets a high verdict, even when it's well written. Read the named files and relationships instead. They tell you where to slow down.</p>
+          </details>
+          <details>
+            <summary>Which languages and systems does it support?</summary>
+            <p>It analyzes Python, JavaScript, TypeScript and Rust, on macOS and Linux. Other languages are listed as not analyzed rather than scored as simple.</p>
+          </details>
+          <details>
+            <summary>Why is the file list capped at 25?</summary>
+            <p>So the answer stays readable for you and small enough for an agent's context. When the cap is hit, the output says so.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot__row">
+      <p>CXCAP is free and open source under the MIT license. Made by Moonlett.</p>
+      <nav aria-label="Project links">
+        <a href="https://github.com/moonlettai/cxcap">GitHub</a>
+        <a href="https://github.com/moonlettai/cxcap/releases">Releases</a>
+        <a href="https://crates.io/crates/cxcap">crates.io</a>
+        <a href="https://github.com/moonlettai/cxcap/blob/main/docs/ai-coding-complexity-feedback.md">Why we built it</a>
+        <a href="https://github.com/moonlettai/cxcap/issues/2">Report a result</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="sr-only" aria-live="polite" data-live></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
