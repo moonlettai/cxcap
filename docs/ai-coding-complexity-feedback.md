@@ -78,7 +78,7 @@ A tool like this is only worth anything if it's wrong in visible, fixable ways. 
 
 - **It audits itself.** Run on its own source, CXCAP reports its own verdict as SEVERE, with 15 high warnings and a 22-block clone between two of its own parsers. A tool built to flatter wouldn't say that.
 - **Historical intents.** Across 31 completed real changes in 7 repositories, CXCAP's top 10 candidates recovered about 70% of the files that actually changed (Recall@10 0.70, MRR 0.47). That's useful, not omniscient.
-- **Bugs found while preparing this post.** Testing it against a dozen public repos turned up real problems. In Python, a qualified `if typing.TYPE_CHECKING:` guard was treated as a runtime import, which invents cycles. `from pkg import submodule` wasn't counted as a dependency, which undercounts dependents. And the intent context set is capped at 25 files without saying so. Fixes are in progress as public pull requests.
+- **Bugs found while preparing this post.** Testing it against a dozen public repos turned up real problems. In Python, a qualified `if typing.TYPE_CHECKING:` guard was treated as a runtime import, which invents cycles. `from pkg import submodule` wasn't counted as a dependency, which undercounts dependents. And the intent context set is capped at 25 files without saying so. All three are fixed in 1.0.4 (#6, #17, #15).
 
 ## Honest limitations
 
